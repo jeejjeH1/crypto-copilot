@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crypto Copilot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--text2:#6b7280;
+  --accent:#2563eb;--accent2:#1d4ed8;--green:#16a34a;--red:#dc2626;
+  --border:#e5e7eb;--shadow:0 1px 3px rgba(0,0,0,.08);
+  --radius:16px;--safe-b:env(safe-area-inset-bottom,0px);
+}
+[data-theme="dark"]{
+  --bg:#0f0f23;--card:#1a1a2e;--text:#e2e8f0;--text2:#94a3b8;
+  --accent:#3b82f6;--accent2:#2563eb;--green:#22c55e;--red:#ef4444;
+  --border:#2d2d44;--shadow:0 1px 3px rgba(0,0,0,.3);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  padding-bottom:calc(70px + var(--safe-b));direction:rtl;
+  -webkit-tap-highlight-color:transparent;transition:background .3s,color .3s;
+}
+.header{
+  position:sticky;top:0;z-index:100;padding:16px 20px 12px;
+  background:var(--bg);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.header h1{font-size:20px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+.header h1 span{font-size:22px}
+.header p{font-size:12px;color:var(--text2);margin-top:2px}
+.tabs{
+  display:flex;gap:6px;padding:12px 20px;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;
+  font-weight:600;border:1.5px solid var(--border);background:var(--card);
+  color:var(--text2);cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab:active{transform:scale(.95)}
+.content{padding:0 20px 20px}
+.panel{display:none;animation:fadeIn .25s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{
+  background:var(--card);border-radius:var(--radius);padding:20px;
+  margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow);
+  transition:background .3s,border-color .3s;
+}
+.card-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:18px}
+textarea,input[type="text"]{
+  width:100%;padding:14px;border-radius:12px;border:1.5px solid var(--border);
+  background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;
+  resize:none;outline:none;transition:border-color .2s;line-height:1.6;
+}
+textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
+textarea{min-height:100px}
+.btn{
+  width:100%;padding:14px;border-radius:12px;border:none;font-size:14px;
+  font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn-row .btn{flex:1}
+.result{
+  margin-top:12px;padding:16px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:14px;line-height:1.8;display:none;
+  animation:fadeIn .3s ease;direction:ltr;text-align:left;
+}
+.result.show{display:block}
+.result.persian{direction:rtl;text-align:right}
+.result-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.comment-nav{
+  display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;
+}
+.nav-btn{
+  width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);
+  background:var(--card);color:var(--text);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.nav-btn:active{transform:scale(.9)}
+.nav-btn:disabled{opacity:.3;cursor:default}
+.nav-counter{font-size:13px;color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
+.coins-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.coin-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+  border-radius:10px;font-size:12px;font-weight:600;
+  font-family:'SF Mono',Monaco,monospace;
+}
+.coin-pill.up{background:rgba(22,163,74,.08);color:var(--green);border:1px solid rgba(22,163,74,.15)}
+.coin-pill.down{background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.15)}
+.coin-pill .name{color:var(--text2);font-weight:500}
+.loading{display:none;text-align:center;padding:30px}
+.loading.show{display:block}
+.spinner{
+  width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 10px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--text2)}
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--card);border-top:1px solid var(--border);
+  display:flex;padding:8px 0 calc(8px + var(--safe-b));
+  backdrop-filter:blur(20px);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px;cursor:pointer;color:var(--text2);transition:color .2s;
+  font-size:10px;font-weight:600;
+}
+.nav-item.active{color:var(--accent)}
+.nav-item .nav-icon{font-size:20px}
+.toast{
+  position:fixed;bottom:calc(80px + var(--safe-b));left:50%;
+  transform:translateX(-50%) translateY(20px);padding:10px 20px;
+  background:var(--text);color:var(--bg);border-radius:10px;
+  font-size:13px;font-weight:600;opacity:0;transition:all .3s;
+  z-index:200;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.key-status{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-radius:10px;font-size:12px;font-weight:600;margin-bottom:12px;
+}
+.key-status.ok{background:rgba(22,163,74,.08);color:var(--green);border:1px solid rgba(22,163,74,.15)}
+.key-status.none{background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.15)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>⚡</span> Crypto Copilot</h1>
+  <p>AI copilot for crypto Twitter</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="reply">💬 Reply</div>
+  <div class="tab" data-tab="translate">🌐 ترجمه</div>
+  <div class="tab" data-tab="project">🚀 Tweet</div>
+  <div class="tab" data-tab="prices">📊 قیمت</div>
+  <div class="tab" data-tab="settings">⚙️ تنظیمات</div>
+</div>
+
+<div class="content">
+
+  <!-- Smart Reply -->
+  <div class="panel active" id="panel-reply">
+    <div class="card">
+      <div class="card-title"><span class="icon">💬</span> Smart Reply</div>
+      <textarea id="replyInput" placeholder="متن توییت رو اینجا بذار..." rows="4"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateReplies()">تولید کامنت</button>
+      </div>
+      <div class="loading" id="replyLoading">
+        <div class="spinner"></div>
+        <div class="loading-text">داره کامنت می‌نویسه...</div>
+      </div>
+      <div class="result" id="replyResult">
+        <div class="result-label">کامنت انگلیسی</div>
+        <div id="replyText"></div>
+        <div class="comment-nav" id="replyNav" style="display:none">
+          <button class="nav-btn" id="replyPrev" onclick="navReply(-1)">▶</button>
+          <span class="nav-counter" id="replyCounter">1 / 2</span>
+          <button class="nav-btn" id="replyNext" onclick="navReply(1)">◀</button>
+        </div>
+        <div class="result-label" style="margin-top:10px">ترجمه فارسی</div>
+        <div id="replyTranslation" class="result persian show"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn-secondary" onclick="copyText('replyText')">کپی</button>
+          <button class="btn btn-secondary" onclick="generateReplies()">بازتولید</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Translate -->
+  <div class="panel" id="panel-translate">
+    <div class="card">
+      <div class="card-title"><span class="icon">🌐</span> ترجمه به فارسی</div>
+      <textarea id="translateInput" placeholder="متن انگلیسی رو اینجا بذار..." rows="4"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="translateText()">ترجمه کن</button>
+      </div>
+      <div class="loading" id="translateLoading">
+        <div class="spinner"></div>
+        <div class="loading-text">در حال ترجمه...</div>
+      </div>
+      <div class="result persian" id="translateResult">
+        <div class="result-label">ترجمه فارسی</div>
+        <div id="translateText"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn-secondary" onclick="copyText('translateText')">کپی</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Tweet -->
+  <div class="panel" id="panel-project">
+    <div class="card">
+      <div class="card-title"><span class="icon">🚀</span> Project Tweet</div>
+      <input type="text" id="projectInput" placeholder="نام پروژه رو بنویس...">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateProjectTweet()">تولید توییت</button>
+      </div>
+      <div class="loading" id="projectLoading">
+        <div class="spinner"></div>
+        <div class="loading-text">داره توییت می‌نویسه...</div>
+      </div>
+      <div class="result" id="projectResult">
+        <div class="result-label">توییت پروژه</div>
+        <div id="projectText"></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn btn-secondary" onclick="copyText('projectText')">کپی</button>
+          <button class="btn btn-secondary" onclick="generateProjectTweet()">بازتولید</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prices -->
+  <div class="panel" id="panel-prices">
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> قیمت لایو ارزها</div>
+      <input type="text" id="priceInput" placeholder="مثلاً $BTC یا bitcoin solana..." dir="ltr">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="fetchPrices()">بررسی قیمت</button>
+      </div>
+      <div class="loading" id="priceLoading">
+        <div class="spinner"></div>
+        <div class="loading-text">دریافت قیمت...</div>
+      </div>
+      <div class="coins-row" id="priceResult"></div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="panel" id="panel-settings">
+    <div class="card">
+      <div class="card-title"><span class="icon">⚙️</span> تنظیمات</div>
+      <div class="key-status" id="keyStatus"></div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.7">
+        API Key خودت از <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent)">OpenRouter</a> بگیر و اینجا وارد کن.
+      </div>
+      <input type="text" id="apiKeyInput" placeholder="sk-or-v1-..." dir="ltr">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveApiKey()">ذخیره کلید</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-danger" onclick="clearApiKey()" style="font-size:12px;padding:10px">حذف کلید</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" data-tab="reply"><div class="nav-icon">💬</div>Reply</div>
+  <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div>ترجمه</div>
+  <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div>Tweet</div>
+  <div class="nav-item" data-tab="prices"><div class="nav-icon">📊</div>قیمت</div>
+  <div class="nav-item" data-tab="settings"><div class="nav-icon">⚙️</div>تنظیمات</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready(); tg.expand();
+  if (tg.colorScheme === 'dark') document.body.setAttribute('data-theme','dark');
+  tg.onEvent('themeChanged', () => {
+    document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : '');
+  });
+}
+
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
+}
+document.querySelectorAll('.tab, .nav-item').forEach(el => {
+  el.addEventListener('click', () => switchTab(el.dataset.tab));
+});
+
+// ── Helpers ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+function copyText(elId) {
+  const text = document.getElementById(elId).innerText;
+  navigator.clipboard?.writeText(text).then(() => showToast('کپی شد ✓'));
+}
+function showLoading(id) { document.getElementById(id).classList.add('show'); }
+function hideLoading(id) { document.getElementById(id).classList.remove('show'); }
+function hide(id) { document.getElementById(id).classList.remove('show'); }
+
+// ── API Key ──
+function getApiKey() { return localStorage.getItem('cc_api_key') || ''; }
+function updateKeyStatus() {
+  const el = document.getElementById('keyStatus');
+  const key = getApiKey();
+  if (key) {
+    el.className = 'key-status ok';
+    el.textContent = '✓ کلید ذخیره شده (' + key.slice(0,12) + '...)';
+  } else {
+    el.className = 'key-status none';
+    el.textContent = '⚠ کلیدی ذخیره نشده — اول کلیدت رو وارد کن';
+  }
+}
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return showToast('کلید رو وارد کن');
+  localStorage.setItem('cc_api_key', key);
+  document.getElementById('apiKeyInput').value = '';
+  updateKeyStatus();
+  showToast('کلید ذخیره شد ✓');
+}
+function clearApiKey() {
+  localStorage.removeItem('cc_api_key');
+  updateKeyStatus();
+  showToast('کلید حذف شد');
+}
+updateKeyStatus();
+
+// ── API Helper ──
+async function api(url, opts = {}) {
+  const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  return r.json();
+}
+function requireKey() {
+  if (!getApiKey()) { showToast('اول توی تنظیمات API Key رو وارد کن'); switchTab('settings'); return false; }
+  return true;
+}
+
+// ── Smart Reply ──
+let replyComments = [], replyTranslations = [], replyIdx = 0;
+async function generateReplies() {
+  const text = document.getElementById('replyInput').value.trim();
+  if (!text) return showToast('متن توییت رو وارد کن');
+  if (!requireKey()) return;
+  showLoading('replyLoading'); hide('replyResult');
+  const styles = ["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];
+  replyComments = []; replyTranslations = [];
+  for (let i = 0; i < 2; i++) {
+    const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
+      apiKey:getApiKey(),
+      system:`Write a short reply to this crypto tweet\n\nRules:\n- Max 1 to 2 sentences only very short\n- Never use emojis or dashes\n- Sometimes make small typos like a real human\n- Say something original dont repeat the tweet\n- Write in English casual CT degen voice\n- Style: ${styles[i]}\n- No hashtags\n- Output ONLY the reply nothing else`,
+      user:text
+    })});
+    if (data.text) replyComments.push(data.text);
+    const tr = await api('/api/ai', { method:'POST', body:JSON.stringify({
+      apiKey:getApiKey(),
+      system:'Translate ONLY the following text into Persian. No explanation, no extra text.',
+      user:data.text||''
+    })});
+    replyTranslations.push(tr.text||'');
+  }
+  hideLoading('replyLoading');
+  if (!replyComments.length) return showToast('خطا در تولید');
+  replyIdx = 0; showReply();
+}
+function showReply() {
+  document.getElementById('replyResult').classList.add('show');
+  document.getElementById('replyText').innerText = replyComments[replyIdx]||'';
+  document.getElementById('replyTranslation').innerText = replyTranslations[replyIdx]||'';
+  document.getElementById('replyCounter').textContent = `${replyIdx+1} / ${replyComments.length}`;
+  document.getElementById('replyNav').style.display = replyComments.length>1?'flex':'none';
+  document.getElementById('replyPrev').disabled = replyIdx===0;
+  document.getElementById('replyNext').disabled = replyIdx===replyComments.length-1;
+}
+function navReply(dir) { replyIdx = Math.max(0,Math.min(replyComments.length-1,replyIdx+dir)); showReply(); }
+
+// ── Translate ──
+async function translateText() {
+  const text = document.getElementById('translateInput').value.trim();
+  if (!text) return showToast('متن رو وارد کن');
+  if (!requireKey()) return;
+  showLoading('translateLoading'); hide('translateResult');
+  const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
+    apiKey:getApiKey(),
+    system:'Translate the following text into Persian. Only the translation, nothing else.',
+    user:text
+  })});
+  hideLoading('translateLoading');
+  if (data.text) { document.getElementById('translateText').innerText = data.text; document.getElementById('translateResult').classList.add('show'); }
+}
+
+// ── Project Tweet ──
+async function generateProjectTweet() {
+  const project = document.getElementById('projectInput').value.trim();
+  if (!project) return showToast('نام پروژه رو وارد کن');
+  if (!requireKey()) return;
+  showLoading('projectLoading'); hide('projectResult');
+  const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
+    apiKey:getApiKey(),
+    system:`Write a crypto twitter post about ${project}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,
+    user:''
+  })});
+  hideLoading('projectLoading');
+  if (data.text) { document.getElementById('projectText').innerText = data.text; document.getElementById('projectResult').classList.add('show'); }
+}
+
+// ── Prices ──
+async function fetchPrices() {
+  const text = document.getElementById('priceInput').value.trim();
+  if (!text) return showToast('نام ارز رو وارد کن');
+  showLoading('priceLoading'); document.getElementById('priceResult').innerHTML = '';
+  const data = await api(`/api/prices?text=${encodeURIComponent(text)}`);
+  hideLoading('priceLoading');
+  const c = document.getElementById('priceResult');
+  if (!data.coins?.length) { c.innerHTML = '<div style="color:var(--text2);font-size:13px">ارزی پیدا نشد</div>'; return; }
+  c.innerHTML = data.coins.map(coin => {
+    const up = coin.change >= 0;
+    const price = coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);
+    return `<div class="coin-pill ${up?'up':'down'}"><span class="name">${coin.name}</span> ${price} <span style="font-size:10px">${up?'+':''}${coin.change.toFixed(1)}%</span></div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
