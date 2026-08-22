@@ -10,6 +10,33 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
+// ── Twitter Proxy (full page) ──
+app.get('/proxy/twitter', async (req, res) => {
+  const url = req.query.url || 'https://x.com';
+  try {
+    const r = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+      },
+      redirect: 'follow',
+    });
+    let html = await r.text();
+    // Rewrite relative URLs to absolute
+    html = html.replace(/(src|href|action)="(\/[^"]+)"/g, `$1="https://x.com$2"`);
+    html = html.replace(/(src|href|action)='(\/[^']+)'/g, `$1='https://x.com$2'`);
+    // Remove Content-Security-Policy that blocks iframe
+    res.removeHeader('X-Frame-Options');
+    res.removeHeader('Content-Security-Policy');
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (e) {
+    res.status(500).send('خطا در دریافت توییتر: ' + e.message);
+  }
+});
+
 // ── AI (OpenRouter) — key from user ──
 app.post('/api/ai', async (req, res) => {
   const { system, user, apiKey } = req.body;
@@ -60,19 +87,16 @@ const TOP_COINS = {
 app.get('/api/prices', async (req, res) => {
   const text = (req.query.text || '').toLowerCase();
   const found = new Map();
-  // $ticker
   const tickers = text.match(/\$([a-z]{2,10})/g);
   if (tickers) for (const m of tickers) {
     const t = m.replace('$','').trim();
     if (TOP_COINS[t]) found.set(TOP_COINS[t], t);
   }
-  // word match
   for (const [key, id] of Object.entries(TOP_COINS)) {
     if (key.length >= 3 && !found.has(id)) {
       try { if (new RegExp('\\b'+key+'\\b','i').test(text)) found.set(id, key); } catch(e){}
     }
   }
-  // unknown tickers → search
   if (tickers) {
     for (const m of tickers.slice(0,3)) {
       const t = m.replace('$','').trim();
@@ -106,8 +130,6 @@ app.get('/api/prices', async (req, res) => {
 
 // ── Telegram WebApp init validation ──
 app.post('/api/verify', (req, res) => {
-  // In production, validate initData from Telegram
-  // For now, just accept
   res.json({ ok: true });
 });
 

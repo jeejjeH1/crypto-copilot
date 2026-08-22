@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>X</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;height:100vh;width:100vw}
+iframe{width:100%;height:100%;border:none;background:#000}
+</style>
+</head>
+<body>
+<iframe id="twitterFrame" src=""></iframe>
+<script>
+const params = new URLSearchParams(window.location.search);
+const tweetUrl = params.get('url') || 'https://x.com';
+document.getElementById('twitterFrame').src = '/proxy/twitter?url=' + encodeURIComponent(tweetUrl);
+</script>
+</body>
+</html>
