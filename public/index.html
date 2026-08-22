@@ -5,390 +5,430 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Crypto Copilot</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#f5f5f0;--card:#fff;--text:#000;--text2:#555;
-  --accent:#ff3a00;--green:#00c853;--red:#ff1744;
-  --border:#000;--border-w:3px;
-}
-[data-theme="dark"]{
-  --bg:#0a0a0a;--card:#141414;--text:#fff;--text2:#999;
-  --accent:#ff3a00;--green:#00e676;--red:#ff1744;
-  --border:#fff;--border-w:3px;
+  --bg:#0b0e11;--card:rgba(255,255,255,.05);--card-solid:#161a1e;
+  --text:#eaecef;--text2:#848e9c;--accent:#f0b90b;--accent2:#f8d12f;
+  --green:#0ecb81;--red:#f6465d;--border:rgba(255,255,255,.08);
+  --glass:rgba(255,255,255,.03);
+  --radius:16px;--safe-b:env(safe-area-inset-bottom,0px);
 }
 body{
-  font-family:'Space Grotesk',sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;
-  padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));
-  transition:background .2s,color .2s;
+  font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;padding-bottom:calc(68px + var(--safe-b));
+  -webkit-tap-highlight-color:transparent;
 }
 /* ── HEADER ── */
 .header{
-  position:sticky;top:0;z-index:100;padding:16px 16px 12px;
-  background:var(--bg);border-bottom:var(--border-w) solid var(--border);
+  position:sticky;top:0;z-index:100;padding:14px 16px 10px;
+  background:rgba(11,14,17,.85);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
 }
-.header-top{display:flex;align-items:center;justify-content:space-between}
-.header h1{
-  font-size:22px;font-weight:700;letter-spacing:-1px;
-  display:flex;align-items:center;gap:8px;text-transform:uppercase;
+.header-row{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-icon{
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(135deg,#f0b90b,#f8d12f);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;color:#0b0e11;
 }
-.header h1 .dot{width:10px;height:10px;background:var(--accent);display:inline-block}
-.header-sub{font-size:11px;color:var(--text2);margin-top:4px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:2px}
-/* ── TABS ── */
-.tabs{
-  display:flex;gap:0;padding:0;overflow-x:auto;
-  scrollbar-width:none;border-bottom:var(--border-w) solid var(--border);
-  background:var(--bg);
+.logo-text{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.header-badge{
+  font-size:10px;padding:4px 10px;border-radius:20px;
+  background:rgba(240,185,11,.12);color:var(--accent);
+  font-weight:600;letter-spacing:.5px;
 }
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex-shrink:0;padding:12px 20px;font-size:12px;font-weight:700;
-  border:none;border-left:var(--border-w) solid var(--border);
-  background:var(--bg);color:var(--text2);cursor:pointer;
-  text-transform:uppercase;letter-spacing:1px;transition:all .1s;
-  font-family:'Space Mono',monospace;
+/* ── DASHBOARD GRID ── */
+.dashboard{padding:16px;display:grid;gap:12px}
+.dash-hero{
+  background:linear-gradient(135deg,rgba(240,185,11,.08),rgba(240,185,11,.02));
+  border:1px solid rgba(240,185,11,.15);border-radius:var(--radius);
+  padding:20px;text-align:center;position:relative;overflow:hidden;
 }
-.tab.active{background:var(--text);color:var(--bg)}
-.tab:active{transform:scale(.97)}
-/* ── CONTENT ── */
-.content{padding:0}
-.panel{display:none;animation:fadeUp .2s ease}
+.dash-hero::before{
+  content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;
+  background:radial-gradient(circle,rgba(240,185,11,.06) 0%,transparent 70%);
+}
+.dash-hero-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:600}
+.sorsa-ring{
+  width:140px;height:140px;border-radius:50%;margin:0 auto 12px;
+  background:conic-gradient(var(--accent) 0%,rgba(240,185,11,.1) 100%);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.sorsa-ring::before{
+  content:'';position:absolute;inset:4px;border-radius:50%;background:var(--bg);
+}
+.sorsa-inner{position:relative;z-index:1;text-align:center}
+.sorsa-num{font-size:36px;font-weight:900;color:var(--accent);line-height:1;font-family:'JetBrains Mono',monospace}
+.sorsa-tier-badge{
+  display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+}
+.t1{background:rgba(246,70,93,.15);color:var(--red)}
+.t2{background:rgba(255,145,0,.15);color:#ff9100}
+.t3{background:rgba(255,214,0,.15);color:#ffd600}
+.t4{background:rgba(14,203,129,.15);color:var(--green)}
+.t5{background:rgba(240,185,11,.15);color:var(--accent)}
+.dash-user{font-size:13px;color:var(--text2);margin-top:8px}
+.dash-user span{color:var(--text);font-weight:600}
+.dash-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+.dash-stat{
+  background:var(--glass);border:1px solid var(--border);border-radius:12px;
+  padding:10px 8px;text-align:center;
+}
+.dash-stat-val{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.dash-stat-lbl{font-size:9px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.dash-stat-val.green{color:var(--green)}
+.dash-stat-val.red{color:var(--red)}
+/* ── TOOL CARDS ── */
+.tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tool-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+}
+.tool-card:active{transform:scale(.97);border-color:var(--accent)}
+.tool-card-icon{font-size:28px;margin-bottom:8px}
+.tool-card-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.tool-card-desc{font-size:10px;color:var(--text2);line-height:1.4}
+.tool-card-glow{
+  position:absolute;top:-20px;right:-20px;width:60px;height:60px;
+  border-radius:50%;opacity:.08;pointer-events:none;
+}
+/* ── SORSA SEARCH ── */
+.search-bar{
+  display:flex;gap:0;border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;background:var(--card);
+}
+.search-bar input{
+  flex:1;padding:14px 16px;border:none;background:transparent;
+  color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;
+}
+.search-bar input::placeholder{color:var(--text2)}
+.search-bar button{
+  padding:14px 20px;border:none;background:var(--accent);
+  color:#0b0e11;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:'Inter',sans-serif;
+}
+/* ── PANELS ── */
+.panel{display:none;animation:slideUp .25s ease}
 .panel.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.panel-header{
+  padding:16px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);
+}
+.panel-back{
+  width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.panel-title{font-size:16px;font-weight:700}
+.panel-body{padding:16px}
 .card{
-  background:var(--card);border-bottom:var(--border-w) solid var(--border);
-  padding:20px 16px;transition:background .2s;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;
 }
-.card-title{
-  font-size:11px;font-weight:700;text-transform:uppercase;
-  letter-spacing:3px;color:var(--text2);margin-bottom:14px;
-  display:flex;align-items:center;gap:8px;
+.card-label{
+  font-size:11px;color:var(--text2);text-transform:uppercase;
+  letter-spacing:1px;margin-bottom:10px;font-weight:600;
 }
-.card-title .icon{font-size:16px}
-/* ── INPUTS ── */
 textarea,input[type="text"]{
-  width:100%;padding:14px;border:var(--border-w) solid var(--border);
-  background:var(--bg);color:var(--text);font-size:15px;
-  font-family:'Space Grotesk',sans-serif;resize:none;outline:none;
-  transition:border-color .1s;line-height:1.5;
+  width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.03);color:var(--text);font-size:14px;
+  font-family:'Inter',sans-serif;resize:none;outline:none;
+  transition:border-color .15s;
 }
 textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
 textarea{min-height:100px}
-/* ── BUTTONS ── */
 .btn{
-  width:100%;padding:16px;border:var(--border-w) solid var(--border);
-  font-size:14px;font-weight:700;cursor:pointer;
-  text-transform:uppercase;letter-spacing:2px;
-  font-family:'Space Mono',monospace;transition:all .1s;
-  background:var(--bg);color:var(--text);
+  width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;
+  font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;
 }
-.btn:active{transform:translateY(2px);box-shadow:4px 4px 0 var(--border)}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn-primary:active{box-shadow:4px 4px 0 rgba(0,0,0,.3)}
-.btn-secondary{background:var(--card);color:var(--text)}
-.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
-.btn-sorsa{background:var(--text);color:var(--bg);font-size:16px;padding:18px;border-color:var(--text)}
-.btn-row{display:flex;gap:0;margin-top:12px}
-.btn-row .btn{flex:1;border-left:none}
-.btn-row .btn:first-child{border-left:var(--border-w) solid var(--border)}
-/* ── RESULTS ── */
+.btn:active{transform:scale(.97)}
+.btn-gold{background:linear-gradient(135deg,#f0b90b,#f8d12f);color:#0b0e11}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-red{background:rgba(246,70,93,.15);color:var(--red);border:1px solid rgba(246,70,93,.2)}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.btn-row .btn{flex:1}
 .result{
-  margin-top:16px;padding:16px;border:var(--border-w) solid var(--border);
-  background:var(--bg);font-size:14px;line-height:1.8;
-  display:none;font-family:'Space Mono',monospace;
+  margin-top:14px;padding:16px;border:1px solid var(--border);
+  border-radius:12px;background:rgba(255,255,255,.02);
+  font-size:14px;line-height:1.8;display:none;
 }
 .result.show{display:block}
-.result-label{
-  font-size:10px;color:var(--text2);margin-bottom:6px;
-  font-weight:700;text-transform:uppercase;letter-spacing:3px;
-}
-.result.persian{font-family:'Space Grotesk',sans-serif;text-align:right;direction:rtl}
+.result.persian{text-align:right;direction:rtl}
+.result-lbl{font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
 /* ── NAV ── */
-.comment-nav{
-  display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0;
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(11,14,17,.92);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);display:flex;
+  padding:6px 0 calc(6px + var(--safe-b));
 }
-.nav-btn{
-  width:36px;height:36px;border:var(--border-w) solid var(--border);
-  background:var(--bg);color:var(--text);font-size:14px;cursor:pointer;
-  font-weight:700;display:flex;align-items:center;justify-content:center;
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px;cursor:pointer;color:var(--text2);transition:color .15s;
 }
-.nav-btn:disabled{opacity:.2;cursor:default}
-.nav-counter{
-  font-size:12px;color:var(--text2);font-weight:700;
-  font-family:'Space Mono',monospace;letter-spacing:1px;
-}
+.nav-item.active{color:var(--accent)}
+.nav-icon{font-size:20px}
+.nav-lbl{font-size:9px;font-weight:600;letter-spacing:.3px}
 /* ── COINS ── */
-.coins-row{display:flex;flex-wrap:wrap;gap:0;margin-top:12px}
+.coins-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .coin-pill{
   display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
-  border:var(--border-w) solid var(--border);font-size:12px;font-weight:700;
-  font-family:'Space Mono',monospace;margin-left:-3px;margin-top:-3px;
+  border-radius:10px;font-size:12px;font-weight:600;
+  font-family:'JetBrains Mono',monospace;border:1px solid var(--border);
+  background:var(--card);
 }
-.coin-pill.up{color:var(--green);border-color:var(--green)}
-.coin-pill.down{color:var(--red);border-color:var(--red)}
+.coin-pill.up{border-color:rgba(14,203,129,.2);color:var(--green)}
+.coin-pill.down{border-color:rgba(246,70,93,.2);color:var(--red)}
 .coin-pill .name{color:var(--text2);font-weight:400}
 /* ── LOADING ── */
 .loading{display:none;text-align:center;padding:30px}
 .loading.show{display:block}
 .spinner{
-  width:28px;height:28px;border:var(--border-w) solid var(--border);
-  border-top-color:var(--accent);animation:spin .6s linear infinite;
-  margin:0 auto 10px;
+  width:30px;height:30px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 8px;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;font-family:'Space Mono',monospace}
-/* ── BOTTOM NAV ── */
-.bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:var(--card);border-top:var(--border-w) solid var(--border);
-  display:flex;
-}
-.nav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:10px 0;cursor:pointer;color:var(--text2);transition:color .1s;
-  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
-  font-family:'Space Mono',monospace;border-left:var(--border-w) solid var(--border);
-}
-.nav-item:first-child{border-left:none}
-.nav-item.active{background:var(--text);color:var(--bg)}
-.nav-item .nav-icon{font-size:18px}
+.loading-text{font-size:11px;color:var(--text2);letter-spacing:.5px}
 /* ── TOAST ── */
 .toast{
-  position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;
+  position:fixed;bottom:calc(76px + var(--safe-b));left:50%;
   transform:translateX(-50%) translateY(20px);padding:10px 20px;
-  background:var(--text);color:var(--bg);border:var(--border-w) solid var(--border);
-  font-size:12px;font-weight:700;opacity:0;transition:all .2s;
-  z-index:200;pointer-events:none;text-transform:uppercase;letter-spacing:1px;
-  font-family:'Space Mono',monospace;
+  background:var(--card-solid);color:var(--text);border:1px solid var(--border);
+  border-radius:10px;font-size:12px;font-weight:600;opacity:0;
+  transition:all .25s;z-index:200;pointer-events:none;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 /* ── KEY STATUS ── */
-.key-status{
-  display:flex;align-items:center;gap:8px;padding:10px 14px;
-  border:var(--border-w) solid var(--border);font-size:11px;font-weight:700;
-  margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;
-  font-family:'Space Mono',monospace;
+.key-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+  border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;
 }
-.key-status.ok{background:var(--green);color:#fff;border-color:var(--green)}
-.key-status.none{background:var(--red);color:#fff;border-color:var(--red)}
-/* ── SORSA SCORE ── */
-.sorsa-result{text-align:center;padding:24px 16px}
-.sorsa-user{font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
-.sorsa-score{
-  font-size:72px;font-weight:700;line-height:1;
-  font-family:'Space Mono',monospace;letter-spacing:-4px;
+.key-badge.ok{background:rgba(14,203,129,.1);color:var(--green)}
+.key-badge.none{background:rgba(246,70,93,.1);color:var(--red)}
+/* ── COMMENT NAV ── */
+.cmt-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0}
+.cmt-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
 }
-.sorsa-tier{
-  display:inline-block;margin:12px 0 20px;padding:8px 20px;
-  border:var(--border-w) solid var(--border);font-size:12px;font-weight:700;
-  text-transform:uppercase;letter-spacing:3px;font-family:'Space Mono',monospace;
-}
-.sorsa-tier.t1{background:var(--red);color:#fff;border-color:var(--red)}
-.sorsa-tier.t2{background:#ff9100;color:#fff;border-color:#ff9100}
-.sorsa-tier.t3{background:#ffd600;color:#000;border-color:#ffd600}
-.sorsa-tier.t4{background:var(--green);color:#fff;border-color:var(--green)}
-.sorsa-tier.t5{background:var(--accent);color:#fff;border-color:var(--accent)}
-.sorsa-stats{
-  display:grid;grid-template-columns:1fr 1fr;gap:0;
-  border:var(--border-w) solid var(--border);margin-top:20px;
-}
-.sorsa-stat{
-  padding:14px;border-left:var(--border-w) solid var(--border);
-  border-bottom:var(--border-w) solid var(--border);text-align:center;
-}
-.sorsa-stat:nth-child(2n){border-left:none}
-.sorsa-stat:nth-child(n+3){border-bottom:none}
-.sorsa-stat-val{font-size:22px;font-weight:700;font-family:'Space Mono',monospace}
-.sorsa-stat-label{font-size:9px;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:2px;font-family:'Space Mono',monospace}
-.sorsa-link{
-  display:block;margin-top:16px;padding:14px;border:var(--border-w) solid var(--border);
-  background:var(--text);color:var(--bg);text-decoration:none;
-  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:3px;
-  font-family:'Space Mono',monospace;text-align:center;
-}
+.cmt-btn:disabled{opacity:.3}
+.cmt-counter{font-size:12px;color:var(--text2);font-weight:600;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-top">
-    <h1><span class="dot"></span>CRYPTO COPILOT</h1>
+  <div class="header-row">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">CryptoCopilot</div>
+    </div>
+    <div class="header-badge">PRO</div>
   </div>
-  <div class="header-sub">AI tools for CT</div>
 </div>
 
-<div class="tabs" id="tabs">
-  <div class="tab active" data-tab="sorsa">Sorsa</div>
-  <div class="tab" data-tab="reply">Reply</div>
-  <div class="tab" data-tab="translate">ترجمه</div>
-  <div class="tab" data-tab="project">Tweet</div>
-  <div class="tab" data-tab="prices">قیمت</div>
-  <div class="tab" data-tab="settings">Settings</div>
+<!-- ═══ DASHBOARD ═══ -->
+<div class="panel active" id="panel-home">
+  <div class="dashboard">
+    <!-- Sorsa Quick Check -->
+    <div class="dash-hero">
+      <div class="dash-hero-label">Sorsa Score Checker</div>
+      <div class="sorsa-ring" id="sorsaRing" style="display:none">
+        <div class="sorsa-inner">
+          <div class="sorsa-num" id="sorsaNum">0</div>
+          <div class="sorsa-tier-badge" id="sorsaTierBadge"></div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="sorsaInput" placeholder="@username" dir="ltr">
+        <button onclick="checkSorsa()">查</button>
+      </div>
+      <div class="dash-user" id="sorsaUserLine" style="display:none">
+        <span id="sorsaUser"></span> on X
+      </div>
+      <div class="dash-stats" id="sorsaStats" style="display:none">
+        <div class="dash-stat">
+          <div class="dash-stat-val" id="sorsaDelta">-</div>
+          <div class="dash-stat-lbl">Delta</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-val" id="sorsaBots">-</div>
+          <div class="dash-stat-lbl">Bots</div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-val" id="sorsaEng">-</div>
+          <div class="dash-stat-lbl">Engagement</div>
+        </div>
+      </div>
+      <div class="loading" id="sorsaLoading"><div class="spinner"></div><div class="loading-text">Searching...</div></div>
+    </div>
+
+    <!-- Tools Grid -->
+    <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-top:4px">Tools</div>
+    <div class="tools-grid">
+      <div class="tool-card" onclick="switchTab('reply')">
+        <div class="tool-card-glow" style="background:var(--accent)"></div>
+        <div class="tool-card-icon">💬</div>
+        <div class="tool-card-title">Smart Reply</div>
+        <div class="tool-card-desc">AI reply for any tweet</div>
+      </div>
+      <div class="tool-card" onclick="switchTab('translate')">
+        <div class="tool-card-glow" style="background:#3b82f6"></div>
+        <div class="tool-card-icon">🌐</div>
+        <div class="tool-card-title">Translate</div>
+        <div class="tool-card-desc">EN to Persian</div>
+      </div>
+      <div class="tool-card" onclick="switchTab('project')">
+        <div class="tool-card-glow" style="background:var(--green)"></div>
+        <div class="tool-card-icon">🚀</div>
+        <div class="tool-card-title">Project Tweet</div>
+        <div class="tool-card-desc">Generate CT post</div>
+      </div>
+      <div class="tool-card" onclick="switchTab('prices')">
+        <div class="tool-card-glow" style="background:var(--red)"></div>
+        <div class="tool-card-icon">📊</div>
+        <div class="tool-card-title">Live Prices</div>
+        <div class="tool-card-desc">Real-time crypto data</div>
+      </div>
+    </div>
+
+    <a href="https://app.sorsa.io" target="_blank" style="display:block;text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:12px;text-decoration:none;font-weight:600;margin-top:4px">
+      Open Sorsa Dashboard ↗
+    </a>
+  </div>
 </div>
 
-<div class="content">
-
-  <!-- Sorsa Score -->
-  <div class="panel active" id="panel-sorsa">
+<!-- ═══ REPLY ═══ -->
+<div class="panel" id="panel-reply">
+  <div class="panel-header">
+    <button class="panel-back" onclick="switchTab('home')">←</button>
+    <div class="panel-title">Smart Reply</div>
+  </div>
+  <div class="panel-body">
     <div class="card">
-      <div class="card-title"><span class="icon">🏆</span> SORSA SCORE CHECKER</div>
-      <input type="text" id="sorsaInput" placeholder="@username" dir="ltr" style="font-family:'Space Mono',monospace">
+      <div class="card-label">Tweet Text</div>
+      <textarea id="replyInput" placeholder="Paste tweet here..." rows="4" dir="ltr"></textarea>
+      <button class="btn btn-gold" style="margin-top:12px" onclick="generateReplies()">⚡ Generate Reply</button>
+    </div>
+    <div class="loading" id="replyLoading"><div class="spinner"></div><div class="loading-text">AI is thinking...</div></div>
+    <div class="result" id="replyResult">
+      <div class="result-lbl">English Reply</div>
+      <div id="replyText"></div>
+      <div class="cmt-nav" id="replyNav" style="display:none">
+        <button class="cmt-btn" id="replyPrev" onclick="navReply(-1)">‹</button>
+        <span class="cmt-counter" id="replyCounter">1/2</span>
+        <button class="cmt-btn" id="replyNext" onclick="navReply(1)">›</button>
+      </div>
+      <div class="result-lbl" style="margin-top:10px">ترجمه فارسی</div>
+      <div id="replyTranslation" class="result persian show" style="margin-top:0;border:none;padding:0;background:none"></div>
       <div class="btn-row">
-        <button class="btn btn-sorsa" onclick="checkSorsa()">-> CHECK SCORE</button>
-      </div>
-      <div class="loading" id="sorsaLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Fetching...</div>
-      </div>
-      <div id="sorsaResult" style="display:none">
-        <div class="sorsa-result">
-          <div class="sorsa-user">@<span id="sorsaUser"></span></div>
-          <div class="sorsa-score" id="sorsaScore"></div>
-          <div class="sorsa-tier" id="sorsaTier"></div>
-          <div class="sorsa-stats">
-            <div class="sorsa-stat">
-              <div class="sorsa-stat-val" id="sorsaDelta"></div>
-              <div class="sorsa-stat-label">Delta</div>
-            </div>
-            <div class="sorsa-stat">
-              <div class="sorsa-stat-val" id="sorsaBots"></div>
-              <div class="sorsa-stat-label">Bots %</div>
-            </div>
-            <div class="sorsa-stat">
-              <div class="sorsa-stat-val" id="sorsaEngagement"></div>
-              <div class="sorsa-stat-label">Engagement</div>
-            </div>
-            <div class="sorsa-stat">
-              <div class="sorsa-stat-val" id="sorsaTierSmall"></div>
-              <div class="sorsa-stat-label">Tier</div>
-            </div>
-          </div>
-          <a class="sorsa-link" id="sorsaLink" href="#" target="_blank">VIEW FULL PROFILE ON SORSA</a>
-        </div>
+        <button class="btn btn-outline" onclick="copyText('replyText')">📋 Copy</button>
+        <button class="btn btn-outline" onclick="generateReplies()">🔄 Regenerate</button>
       </div>
     </div>
   </div>
-
-  <!-- Smart Reply -->
-  <div class="panel" id="panel-reply">
-    <div class="card">
-      <div class="card-title"><span class="icon">💬</span> SMART REPLY</div>
-      <textarea id="replyInput" placeholder="Paste tweet text here..." rows="4" dir="ltr" style="font-family:'Space Mono',monospace"></textarea>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="generateReplies()">-> GENERATE</button>
-      </div>
-      <div class="loading" id="replyLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Generating...</div>
-      </div>
-      <div class="result" id="replyResult">
-        <div class="result-label">English Reply</div>
-        <div id="replyText"></div>
-        <div class="comment-nav" id="replyNav" style="display:none">
-          <button class="nav-btn" id="replyPrev" onclick="navReply(-1)"><</button>
-          <span class="nav-counter" id="replyCounter">1 / 2</span>
-          <button class="nav-btn" id="replyNext" onclick="navReply(1)">></button>
-        </div>
-        <div class="result-label" style="margin-top:12px">ترجمه فارسی</div>
-        <div id="replyTranslation" class="result persian show"></div>
-        <div class="btn-row" style="margin-top:12px">
-          <button class="btn btn-secondary" onclick="copyText('replyText')">COPY</button>
-          <button class="btn btn-secondary" onclick="generateReplies()">REGENERATE</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Translate -->
-  <div class="panel" id="panel-translate">
-    <div class="card">
-      <div class="card-title"><span class="icon">🌐</span> TRANSLATE</div>
-      <textarea id="translateInput" placeholder="Paste English text here..." rows="4" dir="ltr" style="font-family:'Space Mono',monospace"></textarea>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="translateText()">-> TRANSLATE</button>
-      </div>
-      <div class="loading" id="translateLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Translating...</div>
-      </div>
-      <div class="result persian" id="translateResult">
-        <div class="result-label">ترجمه فارسی</div>
-        <div id="translateText"></div>
-        <div class="btn-row" style="margin-top:12px">
-          <button class="btn btn-secondary" onclick="copyText('translateText')">COPY</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Project Tweet -->
-  <div class="panel" id="panel-project">
-    <div class="card">
-      <div class="card-title"><span class="icon">🚀</span> PROJECT TWEET</div>
-      <input type="text" id="projectInput" placeholder="Project name...">
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="generateProjectTweet()">-> GENERATE</button>
-      </div>
-      <div class="loading" id="projectLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Writing...</div>
-      </div>
-      <div class="result" id="projectResult">
-        <div class="result-label">Tweet</div>
-        <div id="projectText"></div>
-        <div class="btn-row" style="margin-top:12px">
-          <button class="btn btn-secondary" onclick="copyText('projectText')">COPY</button>
-          <button class="btn btn-secondary" onclick="generateProjectTweet()">REGENERATE</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Prices -->
-  <div class="panel" id="panel-prices">
-    <div class="card">
-      <div class="card-title"><span class="icon">📊</span> LIVE PRICES</div>
-      <input type="text" id="priceInput" placeholder="$BTC ethereum solana..." dir="ltr" style="font-family:'Space Mono',monospace">
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="fetchPrices()">-> CHECK</button>
-      </div>
-      <div class="loading" id="priceLoading">
-        <div class="spinner"></div>
-        <div class="loading-text">Fetching...</div>
-      </div>
-      <div class="coins-row" id="priceResult"></div>
-    </div>
-  </div>
-
-  <!-- Settings -->
-  <div class="panel" id="panel-settings">
-    <div class="card">
-      <div class="card-title"><span class="icon">⚙️</span> SETTINGS</div>
-      <div class="key-status" id="keyStatus"></div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6;text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace">
-        Get API key from <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:700">OPENROUTER</a>
-      </div>
-      <input type="text" id="apiKeyInput" placeholder="sk-or-v1-..." dir="ltr" style="font-family:'Space Mono',monospace">
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveApiKey()">SAVE KEY</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-danger" onclick="clearApiKey()">DELETE KEY</button>
-      </div>
-    </div>
-  </div>
-
 </div>
 
+<!-- ═══ TRANSLATE ═══ -->
+<div class="panel" id="panel-translate">
+  <div class="panel-header">
+    <button class="panel-back" onclick="switchTab('home')">←</button>
+    <div class="panel-title">Translate</div>
+  </div>
+  <div class="panel-body">
+    <div class="card">
+      <div class="card-label">English Text</div>
+      <textarea id="translateInput" placeholder="Paste text here..." rows="4" dir="ltr"></textarea>
+      <button class="btn btn-gold" style="margin-top:12px" onclick="translateText()">🌐 Translate</button>
+    </div>
+    <div class="loading" id="translateLoading"><div class="spinner"></div><div class="loading-text">Translating...</div></div>
+    <div class="result persian" id="translateResult">
+      <div class="result-lbl">ترجمه فارسی</div>
+      <div id="translateText"></div>
+      <button class="btn btn-outline" style="margin-top:10px" onclick="copyText('translateText')">📋 Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROJECT ═══ -->
+<div class="panel" id="panel-project">
+  <div class="panel-header">
+    <button class="panel-back" onclick="switchTab('home')">←</button>
+    <div class="panel-title">Project Tweet</div>
+  </div>
+  <div class="panel-body">
+    <div class="card">
+      <div class="card-label">Project Name</div>
+      <input type="text" id="projectInput" placeholder="e.g. Bitcoin, Ethereum, Solana...">
+      <button class="btn btn-gold" style="margin-top:12px" onclick="generateProjectTweet()">🚀 Generate Tweet</button>
+    </div>
+    <div class="loading" id="projectLoading"><div class="spinner"></div><div class="loading-text">Writing...</div></div>
+    <div class="result" id="projectResult">
+      <div class="result-lbl">Generated Tweet</div>
+      <div id="projectText"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="copyText('projectText')">📋 Copy</button>
+        <button class="btn btn-outline" onclick="generateProjectTweet()">🔄 Regenerate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRICES ═══ -->
+<div class="panel" id="panel-prices">
+  <div class="panel-header">
+    <button class="panel-back" onclick="switchTab('home')">←</button>
+    <div class="panel-title">Live Prices</div>
+  </div>
+  <div class="panel-body">
+    <div class="card">
+      <div class="card-label">Search Coins</div>
+      <div class="search-bar">
+        <input type="text" id="priceInput" placeholder="$BTC ethereum solana..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
+        <button onclick="fetchPrices()">查</button>
+      </div>
+    </div>
+    <div class="loading" id="priceLoading"><div class="spinner"></div><div class="loading-text">Fetching prices...</div></div>
+    <div class="coins-row" id="priceResult"></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div class="panel" id="panel-settings">
+  <div class="panel-header">
+    <button class="panel-back" onclick="switchTab('home')">←</button>
+    <div class="panel-title">Settings</div>
+  </div>
+  <div class="panel-body">
+    <div class="card">
+      <div class="card-label">API Key</div>
+      <div class="key-badge" id="keyStatus"></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+        Get your key from <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:600">OpenRouter</a>
+      </div>
+      <input type="text" id="apiKeyInput" placeholder="sk-or-v1-..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
+      <button class="btn btn-gold" style="margin-top:12px" onclick="saveApiKey()">💾 Save Key</button>
+      <button class="btn btn-red" style="margin-top:8px" onclick="clearApiKey()">🗑 Delete Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
 <div class="bottom-nav">
-  <div class="nav-item active" data-tab="sorsa"><div class="nav-icon">🏆</div>Sorsa</div>
-  <div class="nav-item" data-tab="reply"><div class="nav-icon">💬</div>Reply</div>
-  <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div>Tarjome</div>
-  <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div>Tweet</div>
-  <div class="nav-item" data-tab="prices"><div class="nav-icon">📊</div>Price</div>
-  <div class="nav-item" data-tab="settings"><div class="nav-icon">⚙️</div>Settings</div>
+  <div class="nav-item active" data-tab="home"><div class="nav-icon">🏠</div><div class="nav-lbl">Home</div></div>
+  <div class="nav-item" data-tab="reply"><div class="nav-icon">💬</div><div class="nav-lbl">Reply</div></div>
+  <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div><div class="nav-lbl">Translate</div></div>
+  <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div><div class="nav-lbl">Tweet</div></div>
+  <div class="nav-item" data-tab="prices"><div class="nav-icon">📊</div><div class="nav-lbl">Prices</div></div>
+  <div class="nav-item" data-tab="settings"><div class="nav-icon">⚙️</div><div class="nav-lbl">Settings</div></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -405,11 +445,11 @@ if (tg) {
 
 // ── Tabs ──
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  window.scrollTo(0,0);
 }
-document.querySelectorAll('.tab, .nav-item').forEach(el => {
+document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => switchTab(el.dataset.tab));
 });
 
@@ -421,84 +461,76 @@ function showToast(msg) {
 }
 function copyText(elId) {
   const text = document.getElementById(elId).innerText;
-  navigator.clipboard?.writeText(text).then(() => showToast('COPIED'));
+  navigator.clipboard?.writeText(text).then(() => showToast('✓ Copied'));
 }
 function showLoading(id) { document.getElementById(id).classList.add('show'); }
 function hideLoading(id) { document.getElementById(id).classList.remove('show'); }
-function hide(id) { document.getElementById(id).classList.remove('show'); }
 
 // ── API Key ──
 function getApiKey() { return localStorage.getItem('cc_api_key') || ''; }
 function updateKeyStatus() {
   const el = document.getElementById('keyStatus');
   const key = getApiKey();
-  if (key) {
-    el.className = 'key-status ok';
-    el.textContent = 'KEY SAVED (' + key.slice(0,12) + '...)';
-  } else {
-    el.className = 'key-status none';
-    el.textContent = 'NO KEY SET';
-  }
+  if (key) { el.className = 'key-badge ok'; el.textContent = '✓ Connected (' + key.slice(0,12) + '...)'; }
+  else { el.className = 'key-badge none'; el.textContent = '⚠ No key set'; }
 }
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return showToast('ENTER KEY');
+  if (!key) return showToast('Enter key');
   localStorage.setItem('cc_api_key', key);
   document.getElementById('apiKeyInput').value = '';
-  updateKeyStatus();
-  showToast('KEY SAVED');
+  updateKeyStatus(); showToast('✓ Key saved');
 }
 function clearApiKey() {
   localStorage.removeItem('cc_api_key');
-  updateKeyStatus();
-  showToast('KEY DELETED');
+  updateKeyStatus(); showToast('Key deleted');
 }
 updateKeyStatus();
 
-// ── API Helper ──
 async function api(url, opts = {}) {
   const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
   return r.json();
 }
 function requireKey() {
-  if (!getApiKey()) { showToast('SET API KEY FIRST'); switchTab('settings'); return false; }
+  if (!getApiKey()) { showToast('Set API key first'); switchTab('settings'); return false; }
   return true;
 }
 
 // ── Sorsa Score ──
 async function checkSorsa() {
   const username = document.getElementById('sorsaInput').value.trim().replace('@','');
-  if (!username) return showToast('ENTER USERNAME');
+  if (!username) return showToast('Enter username');
+  document.getElementById('sorsaRing').style.display = 'none';
+  document.getElementById('sorsaUserLine').style.display = 'none';
+  document.getElementById('sorsaStats').style.display = 'none';
   showLoading('sorsaLoading');
-  document.getElementById('sorsaResult').style.display = 'none';
   const data = await api(`/api/sorsa?username=${encodeURIComponent(username)}`);
   hideLoading('sorsaLoading');
-  if (!data.found) return showToast('NOT FOUND');
-  document.getElementById('sorsaUser').textContent = data.username;
-  document.getElementById('sorsaScore').textContent = data.score.toLocaleString();
-  document.getElementById('sorsaScore').style.color = data.score >= 2000 ? 'var(--green)' : data.score >= 1000 ? 'var(--accent)' : data.score >= 500 ? '#ffd600' : 'var(--red)';
-  const tierEl = document.getElementById('sorsaTier');
-  if (data.tier) {
-    tierEl.textContent = data.tier;
-    const tierNum = parseInt(data.tier);
-    tierEl.className = 'sorsa-tier t' + tierNum;
-  }
-  document.getElementById('sorsaTierSmall').textContent = data.tier || '-';
+  if (!data.found) return showToast('User not found');
+  // Show ring
+  const ring = document.getElementById('sorsaRing');
+  ring.style.display = 'flex';
+  const pct = Math.min(data.score / 6000, 1);
+  ring.style.background = `conic-gradient(var(--accent) ${pct*360}deg, rgba(240,185,11,.08) 0)`;
+  document.getElementById('sorsaNum').textContent = data.score.toLocaleString();
+  const badge = document.getElementById('sorsaTierBadge');
+  if (data.tier) { badge.textContent = data.tier; badge.className = 'sorsa-tier-badge t' + parseInt(data.tier); }
+  document.getElementById('sorsaUser').textContent = '@' + data.username;
+  document.getElementById('sorsaUserLine').style.display = 'block';
+  document.getElementById('sorsaStats').style.display = 'grid';
   document.getElementById('sorsaDelta').textContent = data.delta != null ? (data.delta >= 0 ? '+' : '') + data.delta.toFixed(1) : '-';
-  document.getElementById('sorsaDelta').style.color = data.delta > 0 ? 'var(--green)' : data.delta < 0 ? 'var(--red)' : '';
+  document.getElementById('sorsaDelta').className = 'dash-stat-val ' + (data.delta > 0 ? 'green' : data.delta < 0 ? 'red' : '');
   document.getElementById('sorsaBots').textContent = data.botFollowers ? data.botFollowers + '%' : '-';
-  document.getElementById('sorsaEngagement').textContent = data.engagementRate ? data.engagementRate + '%' : '-';
-  document.getElementById('sorsaLink').href = 'https://app.sorsa.io/profile/' + data.username;
-  document.getElementById('sorsaResult').style.display = 'block';
+  document.getElementById('sorsaEng').textContent = data.engagementRate ? data.engagementRate + '%' : '-';
 }
 
 // ── Smart Reply ──
 let replyComments = [], replyTranslations = [], replyIdx = 0;
 async function generateReplies() {
   const text = document.getElementById('replyInput').value.trim();
-  if (!text) return showToast('PASTE TWEET TEXT');
+  if (!text) return showToast('Paste tweet text');
   if (!requireKey()) return;
-  showLoading('replyLoading'); hide('replyResult');
+  showLoading('replyLoading'); document.getElementById('replyResult').classList.remove('show');
   const styles = ["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];
   replyComments = []; replyTranslations = [];
   for (let i = 0; i < 2; i++) {
@@ -516,14 +548,14 @@ async function generateReplies() {
     replyTranslations.push(tr.text||'');
   }
   hideLoading('replyLoading');
-  if (!replyComments.length) return showToast('ERROR');
+  if (!replyComments.length) return showToast('Error');
   replyIdx = 0; showReply();
 }
 function showReply() {
   document.getElementById('replyResult').classList.add('show');
   document.getElementById('replyText').innerText = replyComments[replyIdx]||'';
   document.getElementById('replyTranslation').innerText = replyTranslations[replyIdx]||'';
-  document.getElementById('replyCounter').textContent = `${replyIdx+1} / ${replyComments.length}`;
+  document.getElementById('replyCounter').textContent = `${replyIdx+1}/${replyComments.length}`;
   document.getElementById('replyNav').style.display = replyComments.length>1?'flex':'none';
   document.getElementById('replyPrev').disabled = replyIdx===0;
   document.getElementById('replyNext').disabled = replyIdx===replyComments.length-1;
@@ -533,9 +565,9 @@ function navReply(dir) { replyIdx = Math.max(0,Math.min(replyComments.length-1,r
 // ── Translate ──
 async function translateText() {
   const text = document.getElementById('translateInput').value.trim();
-  if (!text) return showToast('PASTE TEXT');
+  if (!text) return showToast('Paste text');
   if (!requireKey()) return;
-  showLoading('translateLoading'); hide('translateResult');
+  showLoading('translateLoading'); document.getElementById('translateResult').classList.remove('show');
   const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
     apiKey:getApiKey(),
     system:'Translate the following text into Persian. Only the translation, nothing else.',
@@ -548,9 +580,9 @@ async function translateText() {
 // ── Project Tweet ──
 async function generateProjectTweet() {
   const project = document.getElementById('projectInput').value.trim();
-  if (!project) return showToast('ENTER PROJECT NAME');
+  if (!project) return showToast('Enter project name');
   if (!requireKey()) return;
-  showLoading('projectLoading'); hide('projectResult');
+  showLoading('projectLoading'); document.getElementById('projectResult').classList.remove('show');
   const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
     apiKey:getApiKey(),
     system:`Write a crypto twitter post about ${project}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,
@@ -563,12 +595,12 @@ async function generateProjectTweet() {
 // ── Prices ──
 async function fetchPrices() {
   const text = document.getElementById('priceInput').value.trim();
-  if (!text) return showToast('ENTER COIN NAME');
+  if (!text) return showToast('Enter coin name');
   showLoading('priceLoading'); document.getElementById('priceResult').innerHTML = '';
   const data = await api(`/api/prices?text=${encodeURIComponent(text)}`);
   hideLoading('priceLoading');
   const c = document.getElementById('priceResult');
-  if (!data.coins?.length) { c.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px;text-transform:uppercase;letter-spacing:1px;font-family:Space Mono,monospace">NOT FOUND</div>'; return; }
+  if (!data.coins?.length) { c.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>'; return; }
   c.innerHTML = data.coins.map(coin => {
     const up = coin.change >= 0;
     const price = coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);
