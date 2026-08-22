@@ -24,14 +24,14 @@ app.get('/api/sorsa', async (req, res) => {
     });
     if (!r.ok) return res.json({ found: false, username });
     const html = await r.text();
-    // Extract score from __next_f payload
-    const scoreMatch = html.match(/score_value[\\]*":([\d.]+)/);
+    if (html.includes('not-found') || html.length < 5000) return res.json({ found: false, username });
+    // Extract score - pattern: score_value\\":5179.764
+    const scoreMatch = html.match(/score_value[^0-9]*([0-9.]+)/);
     const tierMatch = html.match(/Tier\s+(\d+\.\s*\w+)/);
-    const deltaMatch = html.match(/score_delta[\\]*":([-\d.]+)/);
-    const botMatch = html.match(/bot_followers[^}]*"value":([\d.]+)/);
-    const engagementMatch = html.match(/engagement_rate[\\]*":([\d.]+)/);
-    const notFound = html.includes('not-found') || html.includes('404') || html.includes('not found');
-    if (notFound || !scoreMatch) return res.json({ found: false, username });
+    const deltaMatch = html.match(/score_delta[^0-9\-]*([-0-9.]+)/);
+    const botMatch = html.match(/bot_followers[^}]*value[^0-9]*([0-9.]+)/);
+    const engagementMatch = html.match(/engagement_rate[^0-9]*([0-9.]+)/);
+    if (!scoreMatch) return res.json({ found: false, username });
     res.json({
       found: true,
       username,
