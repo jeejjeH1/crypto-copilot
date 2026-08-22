@@ -71,6 +71,8 @@ textarea{min-height:100px}
 .btn-primary:hover{background:var(--accent2)}
 .btn-secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
 .btn-danger{background:var(--red);color:#fff}
+.btn-twitter{background:#000;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-twitter:hover{background:#1a1a1a}
 .btn-row{display:flex;gap:8px;margin-top:10px}
 .btn-row .btn{flex:1}
 .result{
@@ -141,6 +143,14 @@ textarea{min-height:100px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.twitter-banner{
+  background:linear-gradient(135deg,#000 0%,#1a1a2e 100%);
+  border-radius:var(--radius);padding:24px;margin-bottom:12px;
+  text-align:center;border:1px solid #333;
+}
+.twitter-banner h2{color:#fff;font-size:18px;margin-bottom:8px}
+.twitter-banner p{color:#94a3b8;font-size:13px;margin-bottom:16px}
+.twitter-icon{font-size:48px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -151,7 +161,8 @@ textarea{min-height:100px}
 </div>
 
 <div class="tabs" id="tabs">
-  <div class="tab active" data-tab="reply">💬 Reply</div>
+  <div class="tab active" data-tab="twitter">🐦 توییتر</div>
+  <div class="tab" data-tab="reply">💬 Reply</div>
   <div class="tab" data-tab="translate">🌐 ترجمه</div>
   <div class="tab" data-tab="project">🚀 Tweet</div>
   <div class="tab" data-tab="prices">📊 قیمت</div>
@@ -160,8 +171,28 @@ textarea{min-height:100px}
 
 <div class="content">
 
+  <!-- Twitter Panel -->
+  <div class="panel active" id="panel-twitter">
+    <div class="twitter-banner">
+      <div class="twitter-icon">🐦</div>
+      <h2>Crypto Copilot</h2>
+      <p>AI-powered assistant for crypto Twitter</p>
+      <button class="btn btn-twitter" onclick="openTwitter()" style="max-width:280px;margin:0 auto">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        باز کردن X / توییتر
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🔗</span> لینک توییت</div>
+      <input type="text" id="tweetUrl" placeholder="لینک توییت رو اینجا بذار..." dir="ltr">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="openTweetLink()">باز کردن توییت</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Smart Reply -->
-  <div class="panel active" id="panel-reply">
+  <div class="panel" id="panel-reply">
     <div class="card">
       <div class="card-title"><span class="icon">💬</span> Smart Reply</div>
       <textarea id="replyInput" placeholder="متن توییت رو اینجا بذار..." rows="4"></textarea>
@@ -272,7 +303,8 @@ textarea{min-height:100px}
 </div>
 
 <div class="bottom-nav">
-  <div class="nav-item active" data-tab="reply"><div class="nav-icon">💬</div>Reply</div>
+  <div class="nav-item active" data-tab="twitter"><div class="nav-icon">🐦</div>توییتر</div>
+  <div class="nav-item" data-tab="reply"><div class="nav-icon">💬</div>Reply</div>
   <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div>ترجمه</div>
   <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div>Tweet</div>
   <div class="nav-item" data-tab="prices"><div class="nav-icon">📊</div>قیمت</div>
@@ -289,6 +321,17 @@ if (tg) {
   tg.onEvent('themeChanged', () => {
     document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : '');
   });
+}
+
+// ── Twitter ──
+function openTwitter() {
+  window.open('https://x.com', '_blank');
+}
+function openTweetLink() {
+  const url = document.getElementById('tweetUrl').value.trim();
+  if (!url) return showToast('لینک توییت رو وارد کن');
+  if (!url.includes('x.com') && !url.includes('twitter.com')) return showToast('لینک معتبر نیست');
+  window.open(url, '_blank');
 }
 
 // ── Tabs ──
