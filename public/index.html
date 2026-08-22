@@ -143,14 +143,18 @@ textarea{min-height:100px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-.twitter-banner{
-  background:linear-gradient(135deg,#000 0%,#1a1a2e 100%);
-  border-radius:var(--radius);padding:24px;margin-bottom:12px;
-  text-align:center;border:1px solid #333;
-}
-.twitter-banner h2{color:#fff;font-size:18px;margin-bottom:8px}
-.twitter-banner p{color:#94a3b8;font-size:13px;margin-bottom:16px}
-.twitter-icon{font-size:48px;margin-bottom:12px}
+.sorsa-card{text-align:center;padding:24px 16px}
+.sorsa-score{font-size:56px;font-weight:800;letter-spacing:-2px;line-height:1}
+.sorsa-tier{font-size:14px;font-weight:700;margin:8px 0 16px;padding:6px 16px;border-radius:20px;display:inline-block}
+.sorsa-tier.t1{background:rgba(220,38,38,.1);color:#ef4444}
+.sorsa-tier.t2{background:rgba(249,115,22,.1);color:#f97316}
+.sorsa-tier.t3{background:rgba(234,179,8,.1);color:#eab308}
+.sorsa-tier.t4{background:rgba(34,197,94,.1);color:#22c55e}
+.sorsa-tier.t5{background:rgba(59,130,246,.1);color:#3b82f6}
+.sorsa-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.sorsa-stat{padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-align:center}
+.sorsa-stat-val{font-size:20px;font-weight:700}
+.sorsa-stat-label{font-size:11px;color:var(--text2);margin-top:2px}
 </style>
 </head>
 <body>
@@ -161,7 +165,7 @@ textarea{min-height:100px}
 </div>
 
 <div class="tabs" id="tabs">
-  <div class="tab active" data-tab="twitter">🐦 توییتر</div>
+  <div class="tab active" data-tab="sorsa">🏆 Sorsa Score</div>
   <div class="tab" data-tab="reply">💬 Reply</div>
   <div class="tab" data-tab="translate">🌐 ترجمه</div>
   <div class="tab" data-tab="project">🚀 Tweet</div>
@@ -171,22 +175,42 @@ textarea{min-height:100px}
 
 <div class="content">
 
-  <!-- Twitter Panel -->
-  <div class="panel active" id="panel-twitter">
-    <div class="twitter-banner">
-      <div class="twitter-icon">🐦</div>
-      <h2>Crypto Copilot</h2>
-      <p>AI-powered assistant for crypto Twitter</p>
-      <button class="btn btn-twitter" onclick="openTwitter()" style="max-width:280px;margin:0 auto">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        باز کردن X / توییتر
-      </button>
-    </div>
+  <!-- Sorsa Score -->
+  <div class="panel active" id="panel-sorsa">
     <div class="card">
-      <div class="card-title"><span class="icon">🔗</span> لینک توییت</div>
-      <input type="text" id="tweetUrl" placeholder="لینک توییت رو اینجا بذار..." dir="ltr">
+      <div class="card-title"><span class="icon">🏆</span> Sorsa Score Checker</div>
+      <input type="text" id="sorsaInput" placeholder="ایدی توییتر رو وارد کن... (مثلاً elonmusk)" dir="ltr">
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="openTweetLink()">باز کردن توییت</button>
+        <button class="btn btn-primary" onclick="checkSorsa()">بررسی اسکور</button>
+      </div>
+      <div class="loading" id="sorsaLoading">
+        <div class="spinner"></div>
+        <div class="loading-text">در حال دریافت اسکور...</div>
+      </div>
+      <div id="sorsaResult" style="display:none;margin-top:16px">
+        <div class="card sorsa-card">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:4px">@<span id="sorsaUser"></span></div>
+          <div class="sorsa-score" id="sorsaScore"></div>
+          <div class="sorsa-tier" id="sorsaTier"></div>
+          <div class="sorsa-stats">
+            <div class="sorsa-stat">
+              <div class="sorsa-stat-val" id="sorsaDelta"></div>
+              <div class="sorsa-stat-label">تغییرات</div>
+            </div>
+            <div class="sorsa-stat">
+              <div class="sorsa-stat-val" id="sorsaBots"></div>
+              <div class="sorsa-stat-label">بات فOLLOWERS</div>
+            </div>
+            <div class="sorsa-stat">
+              <div class="sorsa-stat-val" id="sorsaEngagement"></div>
+              <div class="sorsa-stat-label">Engagement</div>
+            </div>
+            <div class="sorsa-stat">
+              <div class="sorsa-stat-val"><a id="sorsaLink" href="#" target="_blank" style="color:var(--accent);text-decoration:none;font-size:14px">مشاهده در Sorsa ↗</a></div>
+              <div class="sorsa-stat-label">پروفایل کامل</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -303,7 +327,7 @@ textarea{min-height:100px}
 </div>
 
 <div class="bottom-nav">
-  <div class="nav-item active" data-tab="twitter"><div class="nav-icon">🐦</div>توییتر</div>
+  <div class="nav-item active" data-tab="sorsa"><div class="nav-icon">🏆</div>Sorsa</div>
   <div class="nav-item" data-tab="reply"><div class="nav-icon">💬</div>Reply</div>
   <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div>ترجمه</div>
   <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div>Tweet</div>
@@ -321,17 +345,6 @@ if (tg) {
   tg.onEvent('themeChanged', () => {
     document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : '');
   });
-}
-
-// ── Twitter ──
-function openTwitter() {
-  window.open('https://x.com', '_blank');
-}
-function openTweetLink() {
-  const url = document.getElementById('tweetUrl').value.trim();
-  if (!url) return showToast('لینک توییت رو وارد کن');
-  if (!url.includes('x.com') && !url.includes('twitter.com')) return showToast('لینک معتبر نیست');
-  window.open(url, '_blank');
 }
 
 // ── Tabs ──
@@ -394,6 +407,32 @@ async function api(url, opts = {}) {
 function requireKey() {
   if (!getApiKey()) { showToast('اول توی تنظیمات API Key رو وارد کن'); switchTab('settings'); return false; }
   return true;
+}
+
+// ── Sorsa Score ──
+async function checkSorsa() {
+  const username = document.getElementById('sorsaInput').value.trim().replace('@','');
+  if (!username) return showToast('ایدی توییتر رو وارد کن');
+  showLoading('sorsaLoading');
+  document.getElementById('sorsaResult').style.display = 'none';
+  const data = await api(`/api/sorsa?username=${encodeURIComponent(username)}`);
+  hideLoading('sorsaLoading');
+  if (!data.found) return showToast('کاربر پیدا نشد ❌');
+  document.getElementById('sorsaUser').textContent = data.username;
+  document.getElementById('sorsaScore').textContent = data.score.toLocaleString();
+  document.getElementById('sorsaScore').style.color = data.score >= 2000 ? '#22c55e' : data.score >= 1000 ? '#3b82f6' : data.score >= 500 ? '#eab308' : '#ef4444';
+  const tierEl = document.getElementById('sorsaTier');
+  if (data.tier) {
+    tierEl.textContent = data.tier;
+    const tierNum = parseInt(data.tier);
+    tierEl.className = 'sorsa-tier t' + tierNum;
+  }
+  document.getElementById('sorsaDelta').textContent = data.delta != null ? (data.delta >= 0 ? '+' : '') + data.delta.toFixed(1) : '-';
+  document.getElementById('sorsaDelta').style.color = data.delta > 0 ? '#22c55e' : data.delta < 0 ? '#ef4444' : '';
+  document.getElementById('sorsaBots').textContent = data.botFollowers ? data.botFollowers + '%' : '-';
+  document.getElementById('sorsaEngagement').textContent = data.engagementRate ? data.engagementRate + '%' : '-';
+  document.getElementById('sorsaLink').href = 'https://app.sorsa.io/profile/' + data.username;
+  document.getElementById('sorsaResult').style.display = 'block';
 }
 
 // ── Smart Reply ──

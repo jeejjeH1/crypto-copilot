@@ -10,7 +10,43 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
-// ── AI (OpenRouter) — key from user ──
+// ── Sorsa Score Scraper ──
+app.get('/api/sorsa', async (req, res) => {
+  const username = (req.query.username || '').trim().replace('@','');
+  if (!username) return res.status(400).json({ error: 'Username required' });
+  try {
+    const r = await fetch(`https://app.sorsa.io/profile/${username}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html',
+      },
+      redirect: 'follow',
+    });
+    if (!r.ok) return res.json({ found: false, username });
+    const html = await r.text();
+    // Extract score from __next_f payload
+    const scoreMatch = html.match(/score_value[\\]*":([\d.]+)/);
+    const tierMatch = html.match(/Tier\s+(\d+\.\s*\w+)/);
+    const deltaMatch = html.match(/score_delta[\\]*":([-\d.]+)/);
+    const botMatch = html.match(/bot_followers[^}]*"value":([\d.]+)/);
+    const engagementMatch = html.match(/engagement_rate[\\]*":([\d.]+)/);
+    const notFound = html.includes('not-found') || html.includes('404') || html.includes('not found');
+    if (notFound || !scoreMatch) return res.json({ found: false, username });
+    res.json({
+      found: true,
+      username,
+      score: Math.round(parseFloat(scoreMatch[1])),
+      tier: tierMatch ? tierMatch[1] : null,
+      delta: deltaMatch ? parseFloat(deltaMatch[1]) : null,
+      botFollowers: botMatch ? parseFloat(botMatch[1]).toFixed(1) : null,
+      engagementRate: engagementMatch ? (parseFloat(engagementMatch[1]) * 100).toFixed(1) : null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── AI (OpenRouter) ──
 app.post('/api/ai', async (req, res) => {
   const { system, user, apiKey } = req.body;
   if (!apiKey) return res.status(400).json({ error: 'API key required' });
@@ -60,19 +96,16 @@ const TOP_COINS = {
 app.get('/api/prices', async (req, res) => {
   const text = (req.query.text || '').toLowerCase();
   const found = new Map();
-  // $ticker
   const tickers = text.match(/\$([a-z]{2,10})/g);
   if (tickers) for (const m of tickers) {
     const t = m.replace('$','').trim();
     if (TOP_COINS[t]) found.set(TOP_COINS[t], t);
   }
-  // word match
   for (const [key, id] of Object.entries(TOP_COINS)) {
     if (key.length >= 3 && !found.has(id)) {
       try { if (new RegExp('\\b'+key+'\\b','i').test(text)) found.set(id, key); } catch(e){}
     }
   }
-  // unknown tickers → search
   if (tickers) {
     for (const m of tickers.slice(0,3)) {
       const t = m.replace('$','').trim();
@@ -104,12 +137,7 @@ app.get('/api/prices', async (req, res) => {
   }
 });
 
-// ── Telegram WebApp init validation ──
-app.post('/api/verify', (req, res) => {
-  // In production, validate initData from Telegram
-  // For now, just accept
-  res.json({ ok: true });
-});
+app.post('/api/verify', (req, res) => { res.json({ ok: true }); });
 
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
