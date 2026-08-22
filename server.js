@@ -15,25 +15,17 @@ app.get('/api/sorsa', async (req, res) => {
   const username = (req.query.username || '').trim().replace('@','');
   if (!username) return res.status(400).json({ error: 'Username required' });
   try {
-    const url = `https://app.sorsa.io/profile/${username}`;
-    const r = await fetch(url, {
+    const r = await fetch(`https://app.sorsa.io/profile/${username}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
       },
       redirect: 'follow',
     });
     const html = await r.text();
-    
-    // Debug: log first 500 chars if score not found
-    if (!html.includes('score_value')) {
-      return res.json({ found: false, username, debug: html.substring(0, 300), status: r.status, length: html.length });
-    }
-    
+    if (!html.includes('score_value')) return res.json({ found: false, username });
     const scoreMatch = html.match(/score_value[^0-9]*([0-9.]+)/);
     const tierMatch = html.match(/Tier\s+(\d+\.\s*\w+)/);
     const deltaMatch = html.match(/score_delta[^0-9\-]*([-0-9.]+)/);
