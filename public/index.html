@@ -11,16 +11,16 @@
 :root{
   --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;
   --text:#f0f0f5;--text2:#6e6e80;--dim:#3a3a4a;
-  --accent:#6366f1;--accent2:#818cf8;--accent3:#4f46e5;
+  --accent:#8b5cf6;--accent2:#a78bfa;--accent3:#7c3aed;
   --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
   --border:rgba(255,255,255,.06);
-  --glow:rgba(99,102,241,.15);
+  --glow:rgba(139,92,246,.15);
   --r:12px;
 }
 body{
   font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
   min-height:100vh;padding-bottom:60px;
-  background-image:radial-gradient(ellipse at 20% 0%,rgba(99,102,241,.08) 0%,transparent 50%);
+  background-image:radial-gradient(ellipse at 20% 0%,rgba(139,92,246,.08) 0%,transparent 50%);
 }
 /* ── HEADER ── */
 .hdr{
@@ -35,14 +35,14 @@ body{
   width:36px;height:36px;border-radius:10px;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   display:flex;align-items:center;justify-content:center;
-  font-size:18px;box-shadow:0 0 24px rgba(99,102,241,.3);
+  font-size:18px;box-shadow:0 0 24px rgba(139,92,246,.3);
 }
 .hdr-title{font-size:18px;font-weight:800;letter-spacing:-.5px}
 .hdr-sub{font-size:11px;color:var(--text2);margin-top:1px}
 .hdr-badge{
   font-size:10px;padding:4px 10px;border-radius:8px;
   background:var(--glow);color:var(--accent2);font-weight:600;
-  border:1px solid rgba(99,102,241,.2);
+  border:1px solid rgba(139,92,246,.2);
 }
 /* ── TABS ── */
 .tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none}
@@ -52,7 +52,7 @@ body{
   font-weight:600;background:var(--surface);color:var(--text2);
   border:1px solid var(--border);cursor:pointer;transition:all .15s;
 }
-.tb.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 20px rgba(99,102,241,.3)}
+.tb.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 20px rgba(139,92,246,.3)}
 .tb:active{transform:scale(.96)}
 /* ── CONTENT ── */
 .ct{padding:0 16px 16px}
@@ -67,7 +67,7 @@ body{
 }
 .cd::before{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(99,102,241,.3),transparent);
+  background:linear-gradient(90deg,transparent,rgba(139,92,246,.3),transparent);
 }
 .cd-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
 /* ── INPUTS ── */
@@ -93,8 +93,8 @@ textarea.in{min-height:90px;resize:none}
   font-family:'Inter',sans-serif;transition:all .15s;
 }
 .bt:active{transform:scale(.97)}
-.bt-p{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(99,102,241,.25)}
-.bt-p:active{box-shadow:0 2px 10px rgba(99,102,241,.15)}
+.bt-p{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(139,92,246,.25)}
+.bt-p:active{box-shadow:0 2px 10px rgba(139,92,246,.15)}
 .bt-o{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 .bt-d{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15)}
 .bt-row{display:flex;gap:8px;margin-top:10px}
@@ -113,7 +113,7 @@ textarea.in{min-height:90px;resize:none}
 .sorsa-ring{
   width:140px;height:140px;border-radius:50%;margin:0 auto 14px;
   position:relative;
-  background:conic-gradient(var(--accent) 0deg,rgba(99,102,241,.06) 0deg);
+  background:conic-gradient(var(--accent) 0deg,rgba(139,92,246,.06) 0deg);
   display:flex;align-items:center;justify-content:center;
   transition:background .5s;
 }
@@ -136,7 +136,7 @@ textarea.in{min-height:90px;resize:none}
 .t2{background:rgba(245,158,11,.12);color:var(--yellow)}
 .t3{background:rgba(245,158,11,.15);color:var(--yellow)}
 .t4{background:rgba(16,185,129,.12);color:var(--green)}
-.t5{background:rgba(99,102,241,.12);color:var(--accent2)}
+.t5{background:rgba(139,92,246,.12);color:var(--accent2)}
 .sorsa-user{font-size:13px;color:var(--text2);margin-bottom:12px}
 .sorsa-user b{color:var(--text);font-weight:600}
 .sorsa-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
@@ -437,7 +437,7 @@ async function checkSorsa(){
   const ring=document.getElementById('sorsaRing');
   ring.style.display='flex';
   const pct=Math.min(d.score/6000,1);
-  ring.style.background=`conic-gradient(var(--accent) ${pct*360}deg, rgba(99,102,241,.06) 0)`;
+  ring.style.background=`conic-gradient(var(--accent) ${pct*360}deg, rgba(139,92,246,.06) 0)`;
   document.getElementById('sorsaNum').textContent=d.score.toLocaleString();
   const tb=document.getElementById('sorsaTier');
   if(d.tier){tb.textContent=d.tier;tb.className='sorsa-tier t'+parseInt(d.tier)}
