@@ -10,62 +10,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
-// ── Nitter Proxy (Twitter alternative frontend) ──
-const NITTER_INSTANCES = [
-  'https://xcancel.com',
-  'https://nitter.privacydev.net',
-  'https://nitter.poast.org',
-];
-
-app.get('/proxy/twitter', async (req, res) => {
-  let targetUrl = req.query.url || 'https://xcancel.com';
-  
-  // Convert x.com/twitter.com URLs to nitter
-  targetUrl = targetUrl
-    .replace('https://x.com', 'https://xcancel.com')
-    .replace('https://twitter.com', 'https://xcancel.com')
-    .replace('http://x.com', 'https://xcancel.com')
-    .replace('http://twitter.com', 'https://xcancel.com');
-
-  // If it's just the base domain, go to crypto feed
-  if (targetUrl === 'https://xcancel.com' || targetUrl === 'https://xcancel.com/') {
-    targetUrl = 'https://xcancel.com/search?q=crypto+bitcoin&f=tweets';
-  }
-
-  try {
-    const r = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'follow',
-    });
-    
-    let html = await r.text();
-    
-    // Fix relative URLs to point back through proxy
-    html = html.replace(/href="\/([^"]+)"/g, 'href="/proxy/twitter?url=https://xcancel.com/$1"');
-    html = html.replace(/src="\/([^"]+)"/g, 'src="https://xcancel.com/$1"');
-    
-    // Fix profile pictures and media
-    html = html.replace(/src="\/pic\/([^"]+)"/g, 'src="https://xcancel.com/pic/$1"');
-    html = html.replace(/src="\/proxy\/([^"]+)"/g, 'src="https://xcancel.com/proxy/$1"');
-    
-    // Remove nitter branding and fix styling
-    html = html.replace(/<div class="timeline-header"[^>]*>.*?<\/div>/gs, '');
-    
-    res.removeHeader('X-Frame-Options');
-    res.removeHeader('Content-Security-Policy');
-    res.set('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch (e) {
-    // Try next instance
-    res.status(500).send('خطا در دریافت توییتر');
-  }
-});
-
-// ── AI (OpenRouter) ──
+// ── AI (OpenRouter) — key from user ──
 app.post('/api/ai', async (req, res) => {
   const { system, user, apiKey } = req.body;
   if (!apiKey) return res.status(400).json({ error: 'API key required' });
@@ -115,16 +60,19 @@ const TOP_COINS = {
 app.get('/api/prices', async (req, res) => {
   const text = (req.query.text || '').toLowerCase();
   const found = new Map();
+  // $ticker
   const tickers = text.match(/\$([a-z]{2,10})/g);
   if (tickers) for (const m of tickers) {
     const t = m.replace('$','').trim();
     if (TOP_COINS[t]) found.set(TOP_COINS[t], t);
   }
+  // word match
   for (const [key, id] of Object.entries(TOP_COINS)) {
     if (key.length >= 3 && !found.has(id)) {
       try { if (new RegExp('\\b'+key+'\\b','i').test(text)) found.set(id, key); } catch(e){}
     }
   }
+  // unknown tickers → search
   if (tickers) {
     for (const m of tickers.slice(0,3)) {
       const t = m.replace('$','').trim();
@@ -156,7 +104,12 @@ app.get('/api/prices', async (req, res) => {
   }
 });
 
-app.post('/api/verify', (req, res) => { res.json({ ok: true }); });
+// ── Telegram WebApp init validation ──
+app.post('/api/verify', (req, res) => {
+  // In production, validate initData from Telegram
+  // For now, just accept
+  res.json({ ok: true });
+});
 
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
