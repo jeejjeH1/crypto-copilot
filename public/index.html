@@ -5,606 +5,515 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Crypto Copilot</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0b0e11;--card:rgba(255,255,255,.05);--card-solid:#161a1e;
-  --text:#eaecef;--text2:#848e9c;--accent:#f0b90b;--accent2:#f8d12f;
-  --green:#0ecb81;--red:#f6465d;--border:rgba(255,255,255,.08);
-  --glass:rgba(255,255,255,.03);
-  --radius:16px;--safe-b:env(safe-area-inset-bottom,0px);
+  --bg:#0c0c14;--surface:#12121e;--surface2:#1a1a2a;
+  --text:#e8e6f0;--text2:#6b6880;--dim:#3d3a50;
+  --accent:#a78bfa;--accent2:#c4b5fd;--glow:rgba(167,139,250,.15);
+  --green:#34d399;--red:#fb7185;--yellow:#fbbf24;
+  --border:rgba(255,255,255,.06);
+  --r:14px;
 }
 body{
   font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;padding-bottom:calc(68px + var(--safe-b));
-  -webkit-tap-highlight-color:transparent;
+  min-height:100vh;padding-bottom:64px;
 }
 /* ── HEADER ── */
-.header{
-  position:sticky;top:0;z-index:100;padding:14px 16px 10px;
-  background:rgba(11,14,17,.85);backdrop-filter:blur(20px);
+.hdr{
+  position:sticky;top:0;z-index:100;
+  padding:16px 16px 12px;
+  background:rgba(12,12,20,.8);backdrop-filter:blur(24px);
   border-bottom:1px solid var(--border);
 }
-.header-row{display:flex;align-items:center;justify-content:space-between}
-.logo{display:flex;align-items:center;gap:8px}
-.logo-icon{
-  width:32px;height:32px;border-radius:10px;
-  background:linear-gradient(135deg,#f0b90b,#f8d12f);
+.hdr-row{display:flex;align-items:center;justify-content:space-between}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-logo{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);
   display:flex;align-items:center;justify-content:center;
-  font-size:16px;font-weight:900;color:#0b0e11;
+  font-size:17px;box-shadow:0 0 20px rgba(167,139,250,.3);
 }
-.logo-text{font-size:16px;font-weight:800;letter-spacing:-.5px}
-.header-badge{
-  font-size:10px;padding:4px 10px;border-radius:20px;
-  background:rgba(240,185,11,.12);color:var(--accent);
-  font-weight:600;letter-spacing:.5px;
+.hdr-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.hdr-sub{font-size:10px;color:var(--text2);margin-top:1px;font-weight:500}
+.hdr-tag{
+  font-size:9px;padding:3px 8px;border-radius:6px;
+  background:var(--glow);color:var(--accent);font-weight:600;
+  border:1px solid rgba(167,139,250,.2);
 }
-/* ── DASHBOARD GRID ── */
-.dashboard{padding:16px;display:grid;gap:12px}
-.dash-hero{
-  background:linear-gradient(135deg,rgba(240,185,11,.08),rgba(240,185,11,.02));
-  border:1px solid rgba(240,185,11,.15);border-radius:var(--radius);
-  padding:20px;text-align:center;position:relative;overflow:hidden;
+/* ── TABS ── */
+.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tb{
+  flex-shrink:0;padding:7px 14px;border-radius:8px;font-size:12px;
+  font-weight:600;background:var(--surface);color:var(--text2);
+  border:1px solid var(--border);cursor:pointer;transition:all .15s;
 }
-.dash-hero::before{
-  content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;
-  background:radial-gradient(circle,rgba(240,185,11,.06) 0%,transparent 70%);
+.tb.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 16px rgba(167,139,250,.25)}
+.tb:active{transform:scale(.96)}
+/* ── CONTENT ── */
+.ct{padding:0 16px 16px}
+.pn{display:none;animation:fadeIn .2s ease}
+.pn.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ── CARDS ── */
+.cd{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px;margin-bottom:10px;
+  position:relative;overflow:hidden;
 }
-.dash-hero-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:600}
+.cd::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(167,139,250,.2),transparent);
+}
+.cd-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600}
+/* ── INPUTS ── */
+.in{
+  width:100%;padding:13px 14px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface2);
+  color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color .15s;
+}
+.in:focus{border-color:var(--accent)}
+textarea.in{min-height:90px;resize:none}
+.in-row{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.in-row .in{border:none;border-radius:0;flex:1}
+.in-row .in:focus{border:none}
+.in-btn{
+  padding:0 18px;border:none;background:var(--accent);color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+}
+/* ── BUTTONS ── */
+.bt{
+  width:100%;padding:13px;border:none;border-radius:10px;
+  font-size:13px;font-weight:700;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.bt:active{transform:scale(.97)}
+.bt-p{background:var(--accent);color:#fff;box-shadow:0 4px 20px rgba(167,139,250,.2)}
+.bt-p:active{box-shadow:0 2px 10px rgba(167,139,250,.15)}
+.bt-o{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.bt-d{background:rgba(251,113,133,.1);color:var(--red);border:1px solid rgba(251,113,133,.15)}
+.bt-row{display:flex;gap:8px;margin-top:10px}
+.bt-row .bt{flex:1}
+/* ── RESULT ── */
+.rs{
+  margin-top:12px;padding:14px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:14px;line-height:1.7;display:none;
+}
+.rs.show{display:block}
+.rs.fa{text-align:right;direction:rtl}
+.rs-lb{font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+/* ── SORSA ── */
+.sorsa-box{text-align:center;padding:8px 0}
 .sorsa-ring{
-  width:140px;height:140px;border-radius:50%;margin:0 auto 12px;
-  background:conic-gradient(var(--accent) 0%,rgba(240,185,11,.1) 100%);
-  display:flex;align-items:center;justify-content:center;position:relative;
+  width:130px;height:130px;border-radius:50%;margin:0 auto 14px;
+  position:relative;
+  background:conic-gradient(var(--accent) 0deg,rgba(167,139,250,.08) 0deg);
+  display:flex;align-items:center;justify-content:center;
+  transition:background .5s;
 }
 .sorsa-ring::before{
-  content:'';position:absolute;inset:4px;border-radius:50%;background:var(--bg);
+  content:'';position:absolute;inset:5px;border-radius:50%;
+  background:var(--bg);
 }
-.sorsa-inner{position:relative;z-index:1;text-align:center}
-.sorsa-num{font-size:36px;font-weight:900;color:var(--accent);line-height:1;font-family:'JetBrains Mono',monospace}
-.sorsa-tier-badge{
-  display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+.sorsa-ring::after{
+  content:'';position:absolute;inset:-1px;border-radius:50%;
+  background:conic-gradient(var(--accent),transparent 60%);
+  opacity:.3;filter:blur(8px);
 }
-.t1{background:rgba(246,70,93,.15);color:var(--red)}
-.t2{background:rgba(255,145,0,.15);color:#ff9100}
-.t3{background:rgba(255,214,0,.15);color:#ffd600}
-.t4{background:rgba(14,203,129,.15);color:var(--green)}
-.t5{background:rgba(240,185,11,.15);color:var(--accent)}
-.dash-user{font-size:13px;color:var(--text2);margin-top:8px}
-.dash-user span{color:var(--text);font-weight:600}
-.dash-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
-.dash-stat{
-  background:var(--glass);border:1px solid var(--border);border-radius:12px;
-  padding:10px 8px;text-align:center;
+.sorsa-num{position:relative;z-index:1;font-size:34px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace;line-height:1}
+.sorsa-tier{
+  position:relative;z-index:1;display:inline-block;margin-top:4px;
+  padding:2px 10px;border-radius:6px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;
 }
-.dash-stat-val{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
-.dash-stat-lbl{font-size:9px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
-.dash-stat-val.green{color:var(--green)}
-.dash-stat-val.red{color:var(--red)}
-/* ── TOOL CARDS ── */
-.tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tool-card{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+.t1{background:rgba(251,113,133,.12);color:var(--red)}
+.t2{background:rgba(251,191,36,.12);color:var(--yellow)}
+.t3{background:rgba(251,191,36,.15);color:var(--yellow)}
+.t4{background:rgba(52,211,153,.12);color:var(--green)}
+.t5{background:rgba(167,139,250,.12);color:var(--accent)}
+.sorsa-user{font-size:12px;color:var(--text2);margin-bottom:12px}
+.sorsa-user b{color:var(--text);font-weight:600}
+.sorsa-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.sorsa-item{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:10px 6px;text-align:center;
 }
-.tool-card:active{transform:scale(.97);border-color:var(--accent)}
-.tool-card-icon{font-size:28px;margin-bottom:8px}
-.tool-card-title{font-size:13px;font-weight:700;margin-bottom:2px}
-.tool-card-desc{font-size:10px;color:var(--text2);line-height:1.4}
-.tool-card-glow{
-  position:absolute;top:-20px;right:-20px;width:60px;height:60px;
-  border-radius:50%;opacity:.08;pointer-events:none;
+.sorsa-iv{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.sorsa-il{font-size:8px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.sorsa-iv.g{color:var(--green)}.sorsa-iv.r{color:var(--red)}
+/* ── TOOL GRID ── */
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.tc{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 12px;cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;
 }
-/* ── SORSA SEARCH ── */
-.search-bar{
-  display:flex;gap:0;border:1px solid var(--border);border-radius:12px;
-  overflow:hidden;background:var(--card);
+.tc:active{transform:scale(.97);border-color:var(--accent)}
+.tc-emoji{font-size:24px;margin-bottom:6px}
+.tc-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.tc-desc{font-size:10px;color:var(--text2);line-height:1.3}
+.tc-line{
+  position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--accent);opacity:0;transition:opacity .15s;
 }
-.search-bar input{
-  flex:1;padding:14px 16px;border:none;background:transparent;
-  color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;
+.tc:active .tc-line{opacity:1}
+/* ── BOTTOM NAV ── */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(12,12,20,.9);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);display:flex;
 }
-.search-bar input::placeholder{color:var(--text2)}
-.search-bar button{
-  padding:14px 20px;border:none;background:var(--accent);
-  color:#0b0e11;font-size:13px;font-weight:700;cursor:pointer;
-  font-family:'Inter',sans-serif;
+.ni{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 0;cursor:pointer;color:var(--text2);transition:color .12s;
 }
-/* ── PANELS ── */
-.panel{display:none;animation:slideUp .25s ease}
-.panel.active{display:block}
-@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.panel-header{
-  padding:16px;display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid var(--border);
+.ni.on{color:var(--accent)}
+.ni-ic{font-size:18px}
+.ni-lb{font-size:8px;font-weight:600;letter-spacing:.3px}
+/* ── COINS ── */
+.coins{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cp{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 10px;
+  border-radius:8px;font-size:11px;font-weight:600;
+  font-family:'JetBrains Mono',monospace;background:var(--surface2);
+  border:1px solid var(--border);
 }
-.panel-back{
-  width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
-  background:var(--card);color:var(--text);font-size:16px;cursor:pointer;
+.cp.up{border-color:rgba(52,211,153,.2);color:var(--green)}
+.cp.down{border-color:rgba(251,113,133,.2);color:var(--red)}
+.cp .nm{color:var(--text2);font-weight:400}
+/* ── LOADING ── */
+.ld{display:none;text-align:center;padding:24px}
+.ld.on{display:block}
+.sp{
+  width:26px;height:26px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:sp .6s linear infinite;margin:0 auto 6px;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ld-t{font-size:11px;color:var(--text2)}
+/* ── TOAST ── */
+.tt{
+  position:fixed;bottom:72px;left:50%;
+  transform:translateX(-50%) translateY(16px);padding:8px 16px;
+  background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  border-radius:8px;font-size:11px;font-weight:600;opacity:0;
+  transition:all .2s;z-index:200;pointer-events:none;
+}
+.tt.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── KEY ── */
+.kb{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+  border-radius:6px;font-size:10px;font-weight:600;margin-bottom:10px;
+}
+.kb.ok{background:rgba(52,211,153,.1);color:var(--green)}
+.kb.no{background:rgba(251,113,133,.1);color:var(--red)}
+/* ── NAV ── */
+.pnh{display:flex;align-items:center;gap:10px;padding:12px 0}
+.pnb{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
 }
-.panel-title{font-size:16px;font-weight:700}
-.panel-body{padding:16px}
-.card{
-  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-  padding:16px;margin-bottom:12px;
+.pnt{font-size:15px;font-weight:700}
+/* ── CMT NAV ── */
+.cnv{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0}
+.cnb{
+  width:28px;height:28px;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
 }
-.card-label{
-  font-size:11px;color:var(--text2);text-transform:uppercase;
-  letter-spacing:1px;margin-bottom:10px;font-weight:600;
-}
-textarea,input[type="text"]{
-  width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;
-  background:rgba(255,255,255,.03);color:var(--text);font-size:14px;
-  font-family:'Inter',sans-serif;resize:none;outline:none;
-  transition:border-color .15s;
-}
-textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
-textarea{min-height:100px}
-.btn{
-  width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;
-  font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
-  transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn:active{transform:scale(.97)}
-.btn-gold{background:linear-gradient(135deg,#f0b90b,#f8d12f);color:#0b0e11}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-red{background:rgba(246,70,93,.15);color:var(--red);border:1px solid rgba(246,70,93,.2)}
-.btn-row{display:flex;gap:8px;margin-top:12px}
-.btn-row .btn{flex:1}
-.result{
-  margin-top:14px;padding:16px;border:1px solid var(--border);
-  border-radius:12px;background:rgba(255,255,255,.02);
-  font-size:14px;line-height:1.8;display:none;
-}
-.result.show{display:block}
-.result.persian{text-align:right;direction:rtl}
-.result-lbl{font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
-/* ── NAV ── */
-.bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:rgba(11,14,17,.92);backdrop-filter:blur(20px);
-  border-top:1px solid var(--border);display:flex;
-  padding:6px 0 calc(6px + var(--safe-b));
-}
-.nav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:6px;cursor:pointer;color:var(--text2);transition:color .15s;
-}
-.nav-item.active{color:var(--accent)}
-.nav-icon{font-size:20px}
-.nav-lbl{font-size:9px;font-weight:600;letter-spacing:.3px}
-/* ── COINS ── */
-.coins-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.coin-pill{
-  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
-  border-radius:10px;font-size:12px;font-weight:600;
-  font-family:'JetBrains Mono',monospace;border:1px solid var(--border);
-  background:var(--card);
-}
-.coin-pill.up{border-color:rgba(14,203,129,.2);color:var(--green)}
-.coin-pill.down{border-color:rgba(246,70,93,.2);color:var(--red)}
-.coin-pill .name{color:var(--text2);font-weight:400}
-/* ── LOADING ── */
-.loading{display:none;text-align:center;padding:30px}
-.loading.show{display:block}
-.spinner{
-  width:30px;height:30px;border:3px solid var(--border);
-  border-top-color:var(--accent);border-radius:50%;
-  animation:spin .7s linear infinite;margin:0 auto 8px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{font-size:11px;color:var(--text2);letter-spacing:.5px}
-/* ── TOAST ── */
-.toast{
-  position:fixed;bottom:calc(76px + var(--safe-b));left:50%;
-  transform:translateX(-50%) translateY(20px);padding:10px 20px;
-  background:var(--card-solid);color:var(--text);border:1px solid var(--border);
-  border-radius:10px;font-size:12px;font-weight:600;opacity:0;
-  transition:all .25s;z-index:200;pointer-events:none;
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-/* ── KEY STATUS ── */
-.key-badge{
-  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
-  border-radius:8px;font-size:11px;font-weight:600;margin-bottom:12px;
-}
-.key-badge.ok{background:rgba(14,203,129,.1);color:var(--green)}
-.key-badge.none{background:rgba(246,70,93,.1);color:var(--red)}
-/* ── COMMENT NAV ── */
-.cmt-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0}
-.cmt-btn{
-  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
-  background:var(--card);color:var(--text);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:14px;
-}
-.cmt-btn:disabled{opacity:.3}
-.cmt-counter{font-size:12px;color:var(--text2);font-weight:600;font-family:'JetBrains Mono',monospace}
+.cnb:disabled{opacity:.25}
+.cnc{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-row">
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <div class="logo-text">CryptoCopilot</div>
+<div class="hdr">
+  <div class="hdr-row">
+    <div class="hdr-left">
+      <div class="hdr-logo">⚡</div>
+      <div>
+        <div class="hdr-title">CryptoCopilot</div>
+        <div class="hdr-sub">AI-powered CT tools</div>
+      </div>
     </div>
-    <div class="header-badge">PRO</div>
+    <div class="hdr-tag">AI</div>
   </div>
 </div>
 
-<!-- ═══ DASHBOARD ═══ -->
-<div class="panel active" id="panel-home">
-  <div class="dashboard">
-    <!-- Sorsa Quick Check -->
-    <div class="dash-hero">
-      <div class="dash-hero-label">Sorsa Score Checker</div>
-      <div class="sorsa-ring" id="sorsaRing" style="display:none">
-        <div class="sorsa-inner">
-          <div class="sorsa-num" id="sorsaNum">0</div>
-          <div class="sorsa-tier-badge" id="sorsaTierBadge"></div>
-        </div>
-      </div>
-      <div class="search-bar">
-        <input type="text" id="sorsaInput" placeholder="@username" dir="ltr">
-        <button onclick="checkSorsa()">查</button>
-      </div>
-      <div class="dash-user" id="sorsaUserLine" style="display:none">
-        <span id="sorsaUser"></span> on X
-      </div>
-      <div class="dash-stats" id="sorsaStats" style="display:none">
-        <div class="dash-stat">
-          <div class="dash-stat-val" id="sorsaDelta">-</div>
-          <div class="dash-stat-lbl">Delta</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val" id="sorsaBots">-</div>
-          <div class="dash-stat-lbl">Bots</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-val" id="sorsaEng">-</div>
-          <div class="dash-stat-lbl">Engagement</div>
-        </div>
-      </div>
-      <div class="loading" id="sorsaLoading"><div class="spinner"></div><div class="loading-text">Searching...</div></div>
-    </div>
+<div class="tabs" id="tabs">
+  <div class="tb on" data-tab="home">🏠 Home</div>
+  <div class="tb" data-tab="reply">💬 Reply</div>
+  <div class="tb" data-tab="translate">🌐 Translate</div>
+  <div class="tb" data-tab="project">🚀 Tweet</div>
+  <div class="tb" data-tab="prices">📊 Prices</div>
+  <div class="tb" data-tab="settings">⚙️ Settings</div>
+</div>
 
-    <!-- Tools Grid -->
-    <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-top:4px">Tools</div>
-    <div class="tools-grid">
-      <div class="tool-card" onclick="switchTab('reply')">
-        <div class="tool-card-glow" style="background:var(--accent)"></div>
-        <div class="tool-card-icon">💬</div>
-        <div class="tool-card-title">Smart Reply</div>
-        <div class="tool-card-desc">AI reply for any tweet</div>
-      </div>
-      <div class="tool-card" onclick="switchTab('translate')">
-        <div class="tool-card-glow" style="background:#3b82f6"></div>
-        <div class="tool-card-icon">🌐</div>
-        <div class="tool-card-title">Translate</div>
-        <div class="tool-card-desc">EN to Persian</div>
-      </div>
-      <div class="tool-card" onclick="switchTab('project')">
-        <div class="tool-card-glow" style="background:var(--green)"></div>
-        <div class="tool-card-icon">🚀</div>
-        <div class="tool-card-title">Project Tweet</div>
-        <div class="tool-card-desc">Generate CT post</div>
-      </div>
-      <div class="tool-card" onclick="switchTab('prices')">
-        <div class="tool-card-glow" style="background:var(--red)"></div>
-        <div class="tool-card-icon">📊</div>
-        <div class="tool-card-title">Live Prices</div>
-        <div class="tool-card-desc">Real-time crypto data</div>
-      </div>
-    </div>
+<div class="ct">
 
-    <a href="https://app.sorsa.io" target="_blank" style="display:block;text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px;color:var(--text2);font-size:12px;text-decoration:none;font-weight:600;margin-top:4px">
-      Open Sorsa Dashboard ↗
-    </a>
+<!-- ═══ HOME ═══ -->
+<div class="pn on" id="p-home">
+  <!-- Sorsa -->
+  <div class="cd">
+    <div class="cd-label">🔍 Sorsa Score Lookup</div>
+    <div class="in-row">
+      <input class="in" type="text" id="sorsaInput" placeholder="@username" dir="ltr">
+      <button class="in-btn" onclick="checkSorsa()">Search</button>
+    </div>
+    <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
+    <div class="sorsa-box" id="sorsaBox" style="display:none">
+      <div class="sorsa-ring" id="sorsaRing">
+        <div class="sorsa-num" id="sorsaNum">0</div>
+      </div>
+      <div class="sorsa-tier" id="sorsaTier"></div>
+      <div class="sorsa-user"><b id="sorsaUser"></b> on X</div>
+      <div class="sorsa-grid">
+        <div class="sorsa-item"><div class="sorsa-iv" id="sD">-</div><div class="sorsa-il">Delta</div></div>
+        <div class="sorsa-item"><div class="sorsa-iv" id="sB">-</div><div class="sorsa-il">Bots</div></div>
+        <div class="sorsa-item"><div class="sorsa-iv" id="sE">-</div><div class="sorsa-il">Engagement</div></div>
+      </div>
+      <a href="#" target="_blank" id="sorsaLink" style="display:block;margin-top:10px;text-align:center;font-size:11px;color:var(--accent);text-decoration:none;font-weight:600">View full profile on Sorsa →</a>
+    </div>
+  </div>
+  <!-- Tools -->
+  <div class="cd" style="border:none;background:none;padding:0">
+    <div class="cd-label">🛠 AI Tools</div>
+  </div>
+  <div class="tg">
+    <div class="tc" onclick="go('reply')"><div class="tc-emoji">💬</div><div class="tc-title">Smart Reply</div><div class="tc-desc">AI-powered tweet replies</div><div class="tc-line"></div></div>
+    <div class="tc" onclick="go('translate')"><div class="tc-emoji">🌐</div><div class="tc-title">Translate</div><div class="tc-desc">EN ↔ Persian</div><div class="tc-line"></div></div>
+    <div class="tc" onclick="go('project')"><div class="tc-emoji">🚀</div><div class="tc-title">Project Tweet</div><div class="tc-desc">Generate CT posts</div><div class="tc-line"></div></div>
+    <div class="tc" onclick="go('prices')"><div class="tc-emoji">📊</div><div class="tc-title">Live Prices</div><div class="tc-desc">Real-time market data</div><div class="tc-line"></div></div>
   </div>
 </div>
 
 <!-- ═══ REPLY ═══ -->
-<div class="panel" id="panel-reply">
-  <div class="panel-header">
-    <button class="panel-back" onclick="switchTab('home')">←</button>
-    <div class="panel-title">Smart Reply</div>
+<div class="pn" id="p-reply">
+  <div class="pnh"><button class="pnb" onclick="go('home')">←</button><div class="pnt">Smart Reply</div></div>
+  <div class="cd">
+    <div class="cd-label">Tweet Content</div>
+    <textarea class="in" id="replyIn" placeholder="Paste the tweet here..." rows="4" dir="ltr"></textarea>
+    <button class="bt bt-p" style="margin-top:10px" onclick="genReply()">⚡ Generate Reply</button>
   </div>
-  <div class="panel-body">
-    <div class="card">
-      <div class="card-label">Tweet Text</div>
-      <textarea id="replyInput" placeholder="Paste tweet here..." rows="4" dir="ltr"></textarea>
-      <button class="btn btn-gold" style="margin-top:12px" onclick="generateReplies()">⚡ Generate Reply</button>
+  <div class="ld" id="replyLd"><div class="sp"></div><div class="ld-t">AI is writing...</div></div>
+  <div class="rs" id="replyRs">
+    <div class="rs-lb">English Reply</div>
+    <div id="replyTxt"></div>
+    <div class="cnv" id="replyNav" style="display:none">
+      <button class="cnb" id="replyPrev" onclick="navR(-1)">‹</button>
+      <span class="cnc" id="replyCnt">1/2</span>
+      <button class="cnb" id="replyNext" onclick="navR(1)">›</button>
     </div>
-    <div class="loading" id="replyLoading"><div class="spinner"></div><div class="loading-text">AI is thinking...</div></div>
-    <div class="result" id="replyResult">
-      <div class="result-lbl">English Reply</div>
-      <div id="replyText"></div>
-      <div class="cmt-nav" id="replyNav" style="display:none">
-        <button class="cmt-btn" id="replyPrev" onclick="navReply(-1)">‹</button>
-        <span class="cmt-counter" id="replyCounter">1/2</span>
-        <button class="cmt-btn" id="replyNext" onclick="navReply(1)">›</button>
-      </div>
-      <div class="result-lbl" style="margin-top:10px">ترجمه فارسی</div>
-      <div id="replyTranslation" class="result persian show" style="margin-top:0;border:none;padding:0;background:none"></div>
-      <div class="btn-row">
-        <button class="btn btn-outline" onclick="copyText('replyText')">📋 Copy</button>
-        <button class="btn btn-outline" onclick="generateReplies()">🔄 Regenerate</button>
-      </div>
+    <div class="rs-lb" style="margin-top:8px">ترجمه فارسی</div>
+    <div id="replyTr" class="rs fa show" style="margin-top:0;border:none;padding:0;background:none"></div>
+    <div class="bt-row">
+      <button class="bt bt-o" onclick="cp('replyTxt')">📋 Copy</button>
+      <button class="bt bt-o" onclick="genReply()">🔄 Again</button>
     </div>
   </div>
 </div>
 
 <!-- ═══ TRANSLATE ═══ -->
-<div class="panel" id="panel-translate">
-  <div class="panel-header">
-    <button class="panel-back" onclick="switchTab('home')">←</button>
-    <div class="panel-title">Translate</div>
+<div class="pn" id="p-translate">
+  <div class="pnh"><button class="pnb" onclick="go('home')">←</button><div class="pnt">Translate</div></div>
+  <div class="cd">
+    <div class="cd-label">English Text</div>
+    <textarea class="in" id="trIn" placeholder="Paste text here..." rows="4" dir="ltr"></textarea>
+    <button class="bt bt-p" style="margin-top:10px" onclick="doTr()">🌐 Translate</button>
   </div>
-  <div class="panel-body">
-    <div class="card">
-      <div class="card-label">English Text</div>
-      <textarea id="translateInput" placeholder="Paste text here..." rows="4" dir="ltr"></textarea>
-      <button class="btn btn-gold" style="margin-top:12px" onclick="translateText()">🌐 Translate</button>
-    </div>
-    <div class="loading" id="translateLoading"><div class="spinner"></div><div class="loading-text">Translating...</div></div>
-    <div class="result persian" id="translateResult">
-      <div class="result-lbl">ترجمه فارسی</div>
-      <div id="translateText"></div>
-      <button class="btn btn-outline" style="margin-top:10px" onclick="copyText('translateText')">📋 Copy</button>
-    </div>
+  <div class="ld" id="trLd"><div class="sp"></div><div class="ld-t">Translating...</div></div>
+  <div class="rs fa" id="trRs">
+    <div class="rs-lb">ترجمه فارسی</div>
+    <div id="trTxt"></div>
+    <button class="bt bt-o" style="margin-top:8px" onclick="cp('trTxt')">📋 Copy</button>
   </div>
 </div>
 
 <!-- ═══ PROJECT ═══ -->
-<div class="panel" id="panel-project">
-  <div class="panel-header">
-    <button class="panel-back" onclick="switchTab('home')">←</button>
-    <div class="panel-title">Project Tweet</div>
+<div class="pn" id="p-project">
+  <div class="pnh"><button class="pnb" onclick="go('home')">←</button><div class="pnt">Project Tweet</div></div>
+  <div class="cd">
+    <div class="cd-label">Project Name</div>
+    <input class="in" type="text" id="projIn" placeholder="e.g. Bitcoin, Solana, PEPE...">
+    <button class="bt bt-p" style="margin-top:10px" onclick="genProj()">🚀 Generate</button>
   </div>
-  <div class="panel-body">
-    <div class="card">
-      <div class="card-label">Project Name</div>
-      <input type="text" id="projectInput" placeholder="e.g. Bitcoin, Ethereum, Solana...">
-      <button class="btn btn-gold" style="margin-top:12px" onclick="generateProjectTweet()">🚀 Generate Tweet</button>
-    </div>
-    <div class="loading" id="projectLoading"><div class="spinner"></div><div class="loading-text">Writing...</div></div>
-    <div class="result" id="projectResult">
-      <div class="result-lbl">Generated Tweet</div>
-      <div id="projectText"></div>
-      <div class="btn-row">
-        <button class="btn btn-outline" onclick="copyText('projectText')">📋 Copy</button>
-        <button class="btn btn-outline" onclick="generateProjectTweet()">🔄 Regenerate</button>
-      </div>
+  <div class="ld" id="projLd"><div class="sp"></div><div class="ld-t">Writing tweet...</div></div>
+  <div class="rs" id="projRs">
+    <div class="rs-lb">Generated Tweet</div>
+    <div id="projTxt"></div>
+    <div class="bt-row">
+      <button class="bt bt-o" onclick="cp('projTxt')">📋 Copy</button>
+      <button class="bt bt-o" onclick="genProj()">🔄 Again</button>
     </div>
   </div>
 </div>
 
 <!-- ═══ PRICES ═══ -->
-<div class="panel" id="panel-prices">
-  <div class="panel-header">
-    <button class="panel-back" onclick="switchTab('home')">←</button>
-    <div class="panel-title">Live Prices</div>
-  </div>
-  <div class="panel-body">
-    <div class="card">
-      <div class="card-label">Search Coins</div>
-      <div class="search-bar">
-        <input type="text" id="priceInput" placeholder="$BTC ethereum solana..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
-        <button onclick="fetchPrices()">查</button>
-      </div>
+<div class="pn" id="p-prices">
+  <div class="pnh"><button class="pnb" onclick="go('home')">←</button><div class="pnt">Live Prices</div></div>
+  <div class="cd">
+    <div class="cd-label">Search Coins</div>
+    <div class="in-row">
+      <input class="in" type="text" id="prIn" placeholder="$BTC ethereum solana..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
+      <button class="in-btn" onclick="fetchP()">Search</button>
     </div>
-    <div class="loading" id="priceLoading"><div class="spinner"></div><div class="loading-text">Fetching prices...</div></div>
-    <div class="coins-row" id="priceResult"></div>
   </div>
+  <div class="ld" id="prLd"><div class="sp"></div><div class="ld-t">Fetching prices...</div></div>
+  <div class="coins" id="prRs"></div>
 </div>
 
 <!-- ═══ SETTINGS ═══ -->
-<div class="panel" id="panel-settings">
-  <div class="panel-header">
-    <button class="panel-back" onclick="switchTab('home')">←</button>
-    <div class="panel-title">Settings</div>
-  </div>
-  <div class="panel-body">
-    <div class="card">
-      <div class="card-label">API Key</div>
-      <div class="key-badge" id="keyStatus"></div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
-        Get your key from <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:600">OpenRouter</a>
-      </div>
-      <input type="text" id="apiKeyInput" placeholder="sk-or-v1-..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
-      <button class="btn btn-gold" style="margin-top:12px" onclick="saveApiKey()">💾 Save Key</button>
-      <button class="btn btn-red" style="margin-top:8px" onclick="clearApiKey()">🗑 Delete Key</button>
+<div class="pn" id="p-settings">
+  <div class="pnh"><button class="pnb" onclick="go('home')">←</button><div class="pnt">Settings</div></div>
+  <div class="cd">
+    <div class="cd-label">OpenRouter API Key</div>
+    <div class="kb" id="kbSt"></div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">
+      Get your key at <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:600">openrouter.ai/keys</a>
     </div>
+    <input class="in" type="text" id="keyIn" placeholder="sk-or-v1-..." dir="ltr" style="font-family:'JetBrains Mono',monospace">
+    <button class="bt bt-p" style="margin-top:10px" onclick="saveK()">💾 Save</button>
+    <button class="bt bt-d" style="margin-top:6px" onclick="delK()">🗑 Delete</button>
   </div>
 </div>
 
-<!-- ═══ BOTTOM NAV ═══ -->
-<div class="bottom-nav">
-  <div class="nav-item active" data-tab="home"><div class="nav-icon">🏠</div><div class="nav-lbl">Home</div></div>
-  <div class="nav-item" data-tab="reply"><div class="nav-icon">💬</div><div class="nav-lbl">Reply</div></div>
-  <div class="nav-item" data-tab="translate"><div class="nav-icon">🌐</div><div class="nav-lbl">Translate</div></div>
-  <div class="nav-item" data-tab="project"><div class="nav-icon">🚀</div><div class="nav-lbl">Tweet</div></div>
-  <div class="nav-item" data-tab="prices"><div class="nav-icon">📊</div><div class="nav-lbl">Prices</div></div>
-  <div class="nav-item" data-tab="settings"><div class="nav-icon">⚙️</div><div class="nav-lbl">Settings</div></div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="bnav">
+  <div class="ni on" data-tab="home"><div class="ni-ic">🏠</div><div class="ni-lb">Home</div></div>
+  <div class="ni" data-tab="reply"><div class="ni-ic">💬</div><div class="ni-lb">Reply</div></div>
+  <div class="ni" data-tab="translate"><div class="ni-ic">🌐</div><div class="ni-lb">Translate</div></div>
+  <div class="ni" data-tab="project"><div class="ni-ic">🚀</div><div class="ni-lb">Tweet</div></div>
+  <div class="ni" data-tab="prices"><div class="ni-ic">📊</div><div class="ni-lb">Prices</div></div>
+  <div class="ni" data-tab="settings"><div class="ni-ic">⚙️</div><div class="ni-lb">Settings</div></div>
+</div>
+
+<div class="tt" id="tt"></div>
 
 <script>
-const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready(); tg.expand();
-  if (tg.colorScheme === 'dark') document.body.setAttribute('data-theme','dark');
-  tg.onEvent('themeChanged', () => {
-    document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : '');
-  });
-}
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();if(tg.colorScheme==='dark')document.body.setAttribute('data-theme','dark');tg.onEvent('themeChanged',()=>{document.body.setAttribute('data-theme',tg.colorScheme==='dark'?'dark':'')})}
 
-// ── Tabs ──
-function switchTab(tab) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+// ── NAV ──
+function go(t){
+  document.querySelectorAll('.pn').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.tab===t));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   window.scrollTo(0,0);
 }
-document.querySelectorAll('.nav-item').forEach(el => {
-  el.addEventListener('click', () => switchTab(el.dataset.tab));
-});
+document.querySelectorAll('.ni,.tb').forEach(e=>{e.addEventListener('click',()=>go(e.dataset.tab))});
 
-// ── Helpers ──
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
-}
-function copyText(elId) {
-  const text = document.getElementById(elId).innerText;
-  navigator.clipboard?.writeText(text).then(() => showToast('✓ Copied'));
-}
-function showLoading(id) { document.getElementById(id).classList.add('show'); }
-function hideLoading(id) { document.getElementById(id).classList.remove('show'); }
+// ── HELPERS ──
+function toast(m){const t=document.getElementById('tt');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800)}
+function cp(id){navigator.clipboard?.writeText(document.getElementById(id).innerText).then(()=>toast('✓ Copied'))}
+function showLd(id){document.getElementById(id).classList.add('on')}
+function hideLd(id){document.getElementById(id).classList.remove('on')}
 
-// ── API Key ──
-function getApiKey() { return localStorage.getItem('cc_api_key') || ''; }
-function updateKeyStatus() {
-  const el = document.getElementById('keyStatus');
-  const key = getApiKey();
-  if (key) { el.className = 'key-badge ok'; el.textContent = '✓ Connected (' + key.slice(0,12) + '...)'; }
-  else { el.className = 'key-badge none'; el.textContent = '⚠ No key set'; }
-}
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return showToast('Enter key');
-  localStorage.setItem('cc_api_key', key);
-  document.getElementById('apiKeyInput').value = '';
-  updateKeyStatus(); showToast('✓ Key saved');
-}
-function clearApiKey() {
-  localStorage.removeItem('cc_api_key');
-  updateKeyStatus(); showToast('Key deleted');
-}
-updateKeyStatus();
+// ── KEY ──
+function gk(){return localStorage.getItem('cc_api_key')||''}
+function uks(){const e=document.getElementById('kbSt'),k=gk();if(k){e.className='kb ok';e.textContent='✓ Connected ('+k.slice(0,12)+'...)'}else{e.className='kb no';e.textContent='⚠ No key'}}
+function saveK(){const k=document.getElementById('keyIn').value.trim();if(!k)return toast('Enter key');localStorage.setItem('cc_api_key',k);document.getElementById('keyIn').value='';uks();toast('✓ Saved')}
+function delK(){localStorage.removeItem('cc_api_key');uks();toast('Deleted')}
+uks();
 
-async function api(url, opts = {}) {
-  const r = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
-  return r.json();
-}
-function requireKey() {
-  if (!getApiKey()) { showToast('Set API key first'); switchTab('settings'); return false; }
-  return true;
+async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});return r.json()}
+function rk(){if(!gk()){toast('Set API key first');go('settings');return false}return true}
+
+// ── SORSA ──
+async function checkSorsa(){
+  const u=document.getElementById('sorsaInput').value.trim().replace('@','');
+  if(!u)return toast('Enter username');
+  document.getElementById('sorsaBox').style.display='none';
+  showLd('sorsaLd');
+  const d=await api('/api/sorsa?username='+encodeURIComponent(u));
+  hideLd('sorsaLd');
+  if(!d.found)return toast('Not found');
+  const ring=document.getElementById('sorsaRing');
+  ring.style.display='flex';
+  const pct=Math.min(d.score/6000,1);
+  ring.style.background=`conic-gradient(var(--accent) ${pct*360}deg, rgba(167,139,250,.06) 0)`;
+  document.getElementById('sorsaNum').textContent=d.score.toLocaleString();
+  const tb=document.getElementById('sorsaTier');
+  if(d.tier){tb.textContent=d.tier;tb.className='sorsa-tier t'+parseInt(d.tier)}
+  document.getElementById('sorsaUser').textContent='@'+d.username;
+  document.getElementById('sorsaBox').style.display='block';
+  document.getElementById('sD').textContent=d.delta!=null?(d.delta>=0?'+':'')+d.delta.toFixed(1):'-';
+  document.getElementById('sD').className='sorsa-iv '+(d.delta>0?'g':d.delta<0?'r':'');
+  document.getElementById('sB').textContent=d.botFollowers?d.botFollowers+'%':'-';
+  document.getElementById('sE').textContent=d.engagementRate?d.engagementRate+'%':'-';
+  document.getElementById('sorsaLink').href='https://app.sorsa.io/profile/'+d.username;
 }
 
-// ── Sorsa Score ──
-async function checkSorsa() {
-  const username = document.getElementById('sorsaInput').value.trim().replace('@','');
-  if (!username) return showToast('Enter username');
-  document.getElementById('sorsaRing').style.display = 'none';
-  document.getElementById('sorsaUserLine').style.display = 'none';
-  document.getElementById('sorsaStats').style.display = 'none';
-  showLoading('sorsaLoading');
-  const data = await api(`/api/sorsa?username=${encodeURIComponent(username)}`);
-  hideLoading('sorsaLoading');
-  if (!data.found) return showToast('User not found');
-  // Show ring
-  const ring = document.getElementById('sorsaRing');
-  ring.style.display = 'flex';
-  const pct = Math.min(data.score / 6000, 1);
-  ring.style.background = `conic-gradient(var(--accent) ${pct*360}deg, rgba(240,185,11,.08) 0)`;
-  document.getElementById('sorsaNum').textContent = data.score.toLocaleString();
-  const badge = document.getElementById('sorsaTierBadge');
-  if (data.tier) { badge.textContent = data.tier; badge.className = 'sorsa-tier-badge t' + parseInt(data.tier); }
-  document.getElementById('sorsaUser').textContent = '@' + data.username;
-  document.getElementById('sorsaUserLine').style.display = 'block';
-  document.getElementById('sorsaStats').style.display = 'grid';
-  document.getElementById('sorsaDelta').textContent = data.delta != null ? (data.delta >= 0 ? '+' : '') + data.delta.toFixed(1) : '-';
-  document.getElementById('sorsaDelta').className = 'dash-stat-val ' + (data.delta > 0 ? 'green' : data.delta < 0 ? 'red' : '');
-  document.getElementById('sorsaBots').textContent = data.botFollowers ? data.botFollowers + '%' : '-';
-  document.getElementById('sorsaEng').textContent = data.engagementRate ? data.engagementRate + '%' : '-';
-}
-
-// ── Smart Reply ──
-let replyComments = [], replyTranslations = [], replyIdx = 0;
-async function generateReplies() {
-  const text = document.getElementById('replyInput').value.trim();
-  if (!text) return showToast('Paste tweet text');
-  if (!requireKey()) return;
-  showLoading('replyLoading'); document.getElementById('replyResult').classList.remove('show');
-  const styles = ["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];
-  replyComments = []; replyTranslations = [];
-  for (let i = 0; i < 2; i++) {
-    const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
-      apiKey:getApiKey(),
-      system:`Write a short reply to this crypto tweet\n\nRules:\n- Max 1 to 2 sentences only very short\n- Never use emojis or dashes\n- Sometimes make small typos like a real human\n- Say something original dont repeat the tweet\n- Write in English casual CT degen voice\n- Style: ${styles[i]}\n- No hashtags\n- Output ONLY the reply nothing else`,
-      user:text
-    })});
-    if (data.text) replyComments.push(data.text);
-    const tr = await api('/api/ai', { method:'POST', body:JSON.stringify({
-      apiKey:getApiKey(),
-      system:'Translate ONLY the following text into Persian. No explanation, no extra text.',
-      user:data.text||''
-    })});
-    replyTranslations.push(tr.text||'');
+// ── REPLY ──
+let rC=[],rT=[],rI=0;
+async function genReply(){
+  const t=document.getElementById('replyIn').value.trim();
+  if(!t)return toast('Paste tweet text');
+  if(!rk())return;
+  showLd('replyLd');document.getElementById('replyRs').classList.remove('on');
+  const st=["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];
+  rC=[];rT=[];
+  for(let i=0;i<2;i++){
+    const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:`Write a short reply to this crypto tweet\n\nRules:\n- Max 1 to 2 sentences only very short\n- Never use emojis or dashes\n- Sometimes make small typos like a real human\n- Say something original dont repeat the tweet\n- Write in English casual CT degen voice\n- Style: ${st[i]}\n- No hashtags\n- Output ONLY the reply nothing else`,user:t})});
+    if(d.text)rC.push(d.text);
+    const tr=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:'Translate ONLY the following text into Persian. No explanation, no extra text.',user:d.text||''})});
+    rT.push(tr.text||'');
   }
-  hideLoading('replyLoading');
-  if (!replyComments.length) return showToast('Error');
-  replyIdx = 0; showReply();
+  hideLd('replyLd');
+  if(!rC.length)return toast('Error');
+  rI=0;showR();
 }
-function showReply() {
-  document.getElementById('replyResult').classList.add('show');
-  document.getElementById('replyText').innerText = replyComments[replyIdx]||'';
-  document.getElementById('replyTranslation').innerText = replyTranslations[replyIdx]||'';
-  document.getElementById('replyCounter').textContent = `${replyIdx+1}/${replyComments.length}`;
-  document.getElementById('replyNav').style.display = replyComments.length>1?'flex':'none';
-  document.getElementById('replyPrev').disabled = replyIdx===0;
-  document.getElementById('replyNext').disabled = replyIdx===replyComments.length-1;
+function showR(){
+  document.getElementById('replyRs').classList.add('on');
+  document.getElementById('replyTxt').innerText=rC[rI]||'';
+  document.getElementById('replyTr').innerText=rT[rI]||'';
+  document.getElementById('replyCnt').textContent=`${rI+1}/${rC.length}`;
+  document.getElementById('replyNav').style.display=rC.length>1?'flex':'none';
+  document.getElementById('replyPrev').disabled=rI===0;
+  document.getElementById('replyNext').disabled=rI===rC.length-1;
 }
-function navReply(dir) { replyIdx = Math.max(0,Math.min(replyComments.length-1,replyIdx+dir)); showReply(); }
+function navR(d){rI=Math.max(0,Math.min(rC.length-1,rI+d));showR()}
 
-// ── Translate ──
-async function translateText() {
-  const text = document.getElementById('translateInput').value.trim();
-  if (!text) return showToast('Paste text');
-  if (!requireKey()) return;
-  showLoading('translateLoading'); document.getElementById('translateResult').classList.remove('show');
-  const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
-    apiKey:getApiKey(),
-    system:'Translate the following text into Persian. Only the translation, nothing else.',
-    user:text
-  })});
-  hideLoading('translateLoading');
-  if (data.text) { document.getElementById('translateText').innerText = data.text; document.getElementById('translateResult').classList.add('show'); }
+// ── TRANSLATE ──
+async function doTr(){
+  const t=document.getElementById('trIn').value.trim();
+  if(!t)return toast('Paste text');
+  if(!rk())return;
+  showLd('trLd');document.getElementById('trRs').classList.remove('on');
+  const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:'Translate the following text into Persian. Only the translation, nothing else.',user:t})});
+  hideLd('trLd');
+  if(d.text){document.getElementById('trTxt').innerText=d.text;document.getElementById('trRs').classList.add('on')}
 }
 
-// ── Project Tweet ──
-async function generateProjectTweet() {
-  const project = document.getElementById('projectInput').value.trim();
-  if (!project) return showToast('Enter project name');
-  if (!requireKey()) return;
-  showLoading('projectLoading'); document.getElementById('projectResult').classList.remove('show');
-  const data = await api('/api/ai', { method:'POST', body:JSON.stringify({
-    apiKey:getApiKey(),
-    system:`Write a crypto twitter post about ${project}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,
-    user:''
-  })});
-  hideLoading('projectLoading');
-  if (data.text) { document.getElementById('projectText').innerText = data.text; document.getElementById('projectResult').classList.add('show'); }
+// ── PROJECT ──
+async function genProj(){
+  const p=document.getElementById('projIn').value.trim();
+  if(!p)return toast('Enter project name');
+  if(!rk())return;
+  showLd('projLd');document.getElementById('projRs').classList.remove('on');
+  const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:`Write a crypto twitter post about ${p}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,user:''})});
+  hideLd('projLd');
+  if(d.text){document.getElementById('projTxt').innerText=d.text;document.getElementById('projRs').classList.add('on')}
 }
 
-// ── Prices ──
-async function fetchPrices() {
-  const text = document.getElementById('priceInput').value.trim();
-  if (!text) return showToast('Enter coin name');
-  showLoading('priceLoading'); document.getElementById('priceResult').innerHTML = '';
-  const data = await api(`/api/prices?text=${encodeURIComponent(text)}`);
-  hideLoading('priceLoading');
-  const c = document.getElementById('priceResult');
-  if (!data.coins?.length) { c.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>'; return; }
-  c.innerHTML = data.coins.map(coin => {
-    const up = coin.change >= 0;
-    const price = coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);
-    return `<div class="coin-pill ${up?'up':'down'}"><span class="name">${coin.name}</span> ${price} ${up?'+':''}${coin.change.toFixed(1)}%</div>`;
+// ── PRICES ──
+async function fetchP(){
+  const t=document.getElementById('prIn').value.trim();
+  if(!t)return toast('Enter coin name');
+  showLd('prLd');document.getElementById('prRs').innerHTML='';
+  const d=await api('/api/prices?text='+encodeURIComponent(t));
+  hideLd('prLd');
+  const c=document.getElementById('prRs');
+  if(!d.coins?.length){c.innerHTML='<div style="color:var(--text2);font-size:11px;padding:8px">Not found</div>';return}
+  c.innerHTML=d.coins.map(coin=>{
+    const up=coin.change>=0;
+    const pr=coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);
+    return `<div class="cp ${up?'up':'down'}"><span class="nm">${coin.name}</span> ${pr} ${up?'+':''}${coin.change.toFixed(1)}%</div>`;
   }).join('');
 }
 </script>
