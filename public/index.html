@@ -143,14 +143,12 @@ textarea{min-height:100px}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-.twitter-banner{
-  background:linear-gradient(135deg,#000 0%,#1a1a2e 100%);
-  border-radius:var(--radius);padding:24px;margin-bottom:12px;
-  text-align:center;border:1px solid #333;
-}
-.twitter-banner h2{color:#fff;font-size:18px;margin-bottom:8px}
-.twitter-banner p{color:#94a3b8;font-size:13px;margin-bottom:16px}
-.twitter-icon{font-size:48px;margin-bottom:12px}
+
+/* Twitter embedded panel */
+#panel-twitter{padding:0 !important}
+#panel-twitter .card{margin:0;border-radius:0;border:none;box-shadow:none}
+.twitter-embed{width:100%;min-height:calc(100vh - 140px);border:none;background:#fff}
+.twitter-embed.dark{background:#0f0f23}
 </style>
 </head>
 <body>
@@ -173,20 +171,12 @@ textarea{min-height:100px}
 
   <!-- Twitter Panel -->
   <div class="panel active" id="panel-twitter">
-    <div class="twitter-banner">
-      <div class="twitter-icon">🐦</div>
-      <h2>Crypto Copilot</h2>
-      <p>AI-powered assistant for crypto Twitter</p>
-      <button class="btn btn-twitter" onclick="openTwitter()" style="max-width:280px;margin:0 auto">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-        باز کردن X / توییتر
-      </button>
-    </div>
-    <div class="card">
-      <div class="card-title"><span class="icon">🔗</span> لینک توییت</div>
-      <input type="text" id="tweetUrl" placeholder="لینک توییت رو اینجا بذار..." dir="ltr">
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="openTweetLink()">باز کردن توییت</button>
+    <div class="card" style="padding:0">
+      <div id="twitterFeed" style="min-height:calc(100vh - 180px);overflow:auto">
+        <div class="loading show">
+          <div class="spinner"></div>
+          <div class="loading-text">در حال بارگذاری توییتر...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -323,16 +313,27 @@ if (tg) {
   });
 }
 
-// ── Twitter ──
-function openTwitter() {
-  window.open('https://x.com', '_blank');
+// ── Load Twitter Embed ──
+function loadTwitterFeed() {
+  const container = document.getElementById('twitterFeed');
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  // Use Twitter Publish widget for embedded timeline
+  const username = 'crypto';
+  const iframe = document.createElement('iframe');
+  iframe.src = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}`;
+  iframe.className = 'twitter-embed' + (isDark ? ' dark' : '');
+  iframe.style.width = '100%';
+  iframe.style.minHeight = 'calc(100vh - 180px)';
+  iframe.style.border = 'none';
+  iframe.style.overflow = 'auto';
+  iframe.onload = () => {
+    const loader = container.querySelector('.loading');
+    if (loader) loader.classList.remove('show');
+  };
+  container.innerHTML = '';
+  container.appendChild(iframe);
 }
-function openTweetLink() {
-  const url = document.getElementById('tweetUrl').value.trim();
-  if (!url) return showToast('لینک توییت رو وارد کن');
-  if (!url.includes('x.com') && !url.includes('twitter.com')) return showToast('لینک معتبر نیست');
-  window.open(url, '_blank');
-}
+loadTwitterFeed();
 
 // ── Tabs ──
 function switchTab(tab) {
