@@ -40,6 +40,7 @@ app.get('/api/sorsa', async (req, res) => {
       delta: deltaMatch ? parseFloat(deltaMatch[1]) : null,
       botFollowers: botMatch ? parseFloat(botMatch[1]).toFixed(1) : null,
       engagementRate: engagementMatch ? (parseFloat(engagementMatch[1]) * 100).toFixed(1) : null,
+      avatar: (() => { const m = html.match(/pbs\.twimg\.com\/profile_images\/[^"&#\\]+/); return m ? 'https://' + m[0] : null; })(),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
