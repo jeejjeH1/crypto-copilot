@@ -1,518 +1,306 @@
-1|<!DOCTYPE html>
-2|<html lang="fa" dir="rtl">
-3|<head>
-4|<meta charset="UTF-8">
-5|<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-6|<title>Crypto Copilot</title>
-7|<script src="https://telegram.org/js/telegram-web-app.js">
-/* === Project Research / Presearch === */
-let prTopicsData = [];
-let prSelectedTopic = null;
-let prSelectedIdea = null;
-let prScrapedContent = '';
-
-function prPreviewImg(input) {
-  const preview = document.getElementById('prImgPreview');
-  const btn = document.getElementById('prFileBtn');
-  if (input.files && input.files[0]) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-      btn.style.display = 'none';
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crypto Copilot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f8f6f1;--surface:#ffffff;--surface2:#f0ede6;
+  --text:#1a1a2e;--text2:#8a8694;--dim:#c5c1b8;
+  --accent:#7c3aed;--accent2:#a78bfa;--accent3:#6d28d9;
+  --green:#059669;--red:#dc2626;--yellow:#d97706;
+  --border:rgba(0,0,0,.06);
+  --glow:rgba(124,58,237,.08);
+  --r:14px;--shadow:0 1px 3px rgba(0,0,0,.04);
 }
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:64px}
 
-async function prAnalyze() {
-  const url = document.getElementById('prUrlIn').value.trim();
-  if (!url) return toast('Enter project URL');
-  if (!rk()) return;
-  
-  // Reset state
-  document.getElementById('prTopicsWrap').innerHTML = '';
-  document.getElementById('prIdeasWrap').innerHTML = '';
-  document.getElementById('prTweetRs').classList.remove('on');
-  document.getElementById('prImgCard').style.display = 'none';
-  prTopicsData = [];
-  prSelectedTopic = null;
-  prSelectedIdea = null;
-  
-  showLd('prAnalyzeLd');
-  
-  try {
-    // Scrape the URL
-    const scrapeResp = await api('/api/ai', {
-      method: 'POST',
-      body: JSON.stringify({
-        apiKey: gk(),
-        system: 'You are a web scraper. Scrape and summarize the content from this URL. Return the raw content as-is.',
-        user: 'Fetch and summarize the main content from this URL: ' + url
-      })
-    });
-    prScrapedContent = scrapeResp.text || '';
-    
-    // Generate 25 topics from the scraped content
-    const topicsResp = await api('/api/ai', {
-      method: 'POST',
-      body: JSON.stringify({
-        apiKey: gk(),
-        system: `You are a crypto content strategist. Given scraped web content, generate exactly 25 distinct research topics that could be turned into crypto Twitter posts. Return ONLY valid JSON: [{"id":1,"title":"Topic Title","ideas":["idea1","idea2","idea3","idea4","idea5"]}] — each topic must have 4-6 ideas. No markdown, no explanation.`,
-        user: 'Scraped content:\n\n' + prScrapedContent.substring(0, 8000) + '\n\nGenerate 25 topics with ideas.'
-      })
-    });
-    
-    // Parse topics
-    let topicsRaw = topicsResp.text || '[]';
-    // Strip markdown code fences if present
-    topicsRaw = topicsRaw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    try {
-      prTopicsData = JSON.parse(topicsRaw);
-    } catch(e) {
-      // Try to extract JSON array from response
-      const match = topicsRaw.match(/\[.*\]/s);
-      if (match) prTopicsData = JSON.parse(match[0]);
-      else throw new Error('Could not parse topics');
-    }
-    
-    // Limit to 25
-    prTopicsData = prTopicsData.slice(0, 25);
-    
-    hideLd('prAnalyzeLd');
-    document.getElementById('prImgCard').style.display = 'block';
-    prRenderTopics();
-    
-  } catch(e) {
-    hideLd('prAnalyzeLd');
-    toast('Error: ' + e.message.substring(0, 80));
-  }
-}
+/* SVG icon helper */
+.ic{width:20px;height:20px;stroke-width:1.8;fill:none;stroke:currentColor}
+.ic-sm{width:16px;height:16px}
+.ic-lg{width:24px;height:24px}
 
-function prRenderTopics() {
-  const wrap = document.getElementById('prTopicsWrap');
-  let html = '<div class="cd"><div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Topics (' + prTopicsData.length + ')</div><div class="pr-grid">';
-  
-  prTopicsData.forEach(function(topic, idx) {
-    html += '<div class="pr-topic" onclick="prSelectTopic(' + idx + ')" id="prTopic' + idx + '">';
-    html += '<div class="pr-topic-num">#' + (idx + 1) + '</div>';
-    html += '<div class="pr-topic-title">' + prEscHtml(topic.title || 'Topic ' + (idx+1)) + '</div>';
-    html += '<div class="tc-line"></div>';
-    html += '</div>';
-  });
-  
-  html += '</div></div>';
-  wrap.innerHTML = html;
-}
+.hdr{position:sticky;top:0;z-index:100;padding:14px 16px 10px;background:rgba(248,246,241,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.hdr-row{display:flex;align-items:center;justify-content:space-between}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.hdr-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.25)}
+.hdr-title{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.hdr-sub{font-size:11px;color:var(--text2);margin-top:1px}
+.hdr-badge{font-size:10px;padding:4px 10px;border-radius:8px;background:var(--glow);color:var(--accent);font-weight:600;border:1px solid rgba(124,58,237,.15)}
 
-function prSelectTopic(idx) {
-  prSelectedTopic = idx;
-  const topic = prTopicsData[idx];
-  document.getElementById('prIdeasWrap').innerHTML = '';
-  document.getElementById('prTweetRs').classList.remove('on');
-  
-  // Highlight selected, hide others
-  document.querySelectorAll('.pr-topic').forEach(function(el, i) {
-    el.style.opacity = i === idx ? '1' : '0.5';
-    el.style.borderColor = i === idx ? 'var(--accent)' : 'var(--border)';
-  });
-  
-  const ideas = topic.ideas || [];
-  let html = '<div class="cd"><div class="pr-back-btn" onclick="prDeselectTopic()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> All Topics</div>';
-  html += '<div class="cd-label" style="margin-bottom:6px">' + prEscHtml(topic.title) + '</div>';
-  
-  ideas.forEach(function(idea, i) {
-    html += '<div class="pr-idea" onclick="prSelectIdea(' + idx + ',' + i + ')">';
-    html += prEscHtml(idea);
-    html += '<div class="pr-idea-icon"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate tweet</div>';
-    html += '</div>';
-  });
-  
-  html += '</div>';
-  document.getElementById('prIdeasWrap').innerHTML = html;
-}
+.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;background:var(--surface);color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:all .15s;box-shadow:var(--shadow);display:flex;align-items:center;gap:6px}
+.tb.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 12px rgba(124,58,237,.3)}
+.tb:active{transform:scale(.96)}
 
-function prDeselectTopic() {
-  prSelectedTopic = null;
-  document.getElementById('prIdeasWrap').innerHTML = '';
-  document.querySelectorAll('.pr-topic').forEach(function(el) {
-    el.style.opacity = '1';
-    el.style.borderColor = 'var(--border)';
-  });
-}
+.ct{padding:0 16px 16px}
+.pn{display:none;animation:fadeIn .25s ease}
+.pn.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-function prEscHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
+.cd{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.cd-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:6px}
 
-async function prSelectIdea(topicIdx, ideaIdx) {
-  const topic = prTopicsData[topicIdx];
-  const idea = (topic.ideas || [])[ideaIdx];
-  if (!idea) return;
-  
-  prSelectedIdea = { topicIdx: topicIdx, ideaIdx: ideaIdx };
-  
-  if (!rk()) return;
-  
-  // Show loading
-  const wrap = document.getElementById('prTweetRs');
-  wrap.classList.remove('on');
-  wrap.insertAdjacentHTML('beforebegin', '<div class="ld on" id="prTweetLd"><div class="sp"></div><div class="ld-t">Generating tweet...</div></div>');
-  
-  try {
-    const styleDesc = document.getElementById('prStyleIn').value.trim();
-    let extraStyle = styleDesc ? '\n- Visual style reference: ' + styleDesc : '';
-    
-    const tweetResp = await api('/api/ai', {
-      method: 'POST',
-      body: JSON.stringify({
-        apiKey: gk(),
-        system: 'You are a crypto Twitter post writer. Write viral, insightful crypto CT posts.',
-        user: 'Write a crypto Twitter post based on this topic and idea.\n\nTopic: ' + (topic.title || '') + '\nIdea: ' + idea + '\nProject context: ' + prScrapedContent.substring(0, 3000) + '\n\nRules:\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet' + extraStyle
-      })
-    });
-    
-    const tweetText = tweetResp.text || '';
-    
-    // Translate to Persian
-    let persianText = '';
-    try {
-      const trResp = await api('/api/ai', {
-        method: 'POST',
-        body: JSON.stringify({
-          apiKey: gk(),
-          system: 'You are a translator.',
-          user: 'Translate ONLY the following text into Persian. No explanation, no extra text.\n\n' + tweetText
-        })
-      });
-      persianText = trResp.text || '';
-    } catch(e) { /* translation optional */ }
-    
-    // Remove loading
-    const ld = document.getElementById('prTweetLd');
-    if (ld) ld.remove();
-    
-    document.getElementById('prTweetTxt').innerText = tweetText;
-    document.getElementById('prTweetTr').innerText = persianText;
-    wrap.classList.add('on');
-    wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
-  } catch(e) {
-    const ld = document.getElementById('prTweetLd');
-    if (ld) ld.remove();
-    toast('Error: ' + e.message.substring(0, 80));
-  }
-}
+.in{width:100%;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s}
+.in:focus{border-color:var(--accent)}
+textarea.in{min-height:90px;resize:none}
+.in-row{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.in-row .in{border:none;border-radius:0;flex:1;background:var(--surface)}
+.in-row .in:focus{border:none}
+.in-btn{padding:0 18px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px}
 
-async function prRegenerate() {
-  if (prSelectedIdea) {
-    await prSelectIdea(prSelectedIdea.topicIdx, prSelectedIdea.ideaIdx);
-  }
-}
+.bt{width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.bt:active{transform:scale(.97)}
+.bt-p{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.25)}
+.bt-o{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.bt-d{background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.12)}
+.bt-row{display:flex;gap:8px;margin-top:10px}.bt-row .bt{flex:1}
 
-</script>
-8|<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-9|<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.min.css">
-10|<style>
-11|*{margin:0;padding:0;box-sizing:border-box}
-12|:root{
-13|  --bg:#f8f6f1;--surface:#ffffff;--surface2:#f0ede6;
-14|  --text:#1a1a2e;--text2:#8a8694;--dim:#c5c1b8;
-15|  --accent:#7c3aed;--accent2:#a78bfa;--accent3:#6d28d9;
-16|  --green:#059669;--red:#dc2626;--yellow:#d97706;
-17|  --border:rgba(0,0,0,.06);
-18|  --glow:rgba(124,58,237,.08);
-19|  --r:14px;--shadow:0 1px 3px rgba(0,0,0,.04);
-20|}
-21|body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:64px}
-22|
-23|/* SVG icon helper */
-24|.ic{width:20px;height:20px;stroke-width:1.8;fill:none;stroke:currentColor}
-25|.ic-sm{width:16px;height:16px}
-26|.ic-lg{width:24px;height:24px}
-27|
-28|.hdr{position:sticky;top:0;z-index:100;padding:14px 16px 10px;background:rgba(248,246,241,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-29|.hdr-row{display:flex;align-items:center;justify-content:space-between}
-30|.hdr-left{display:flex;align-items:center;gap:10px}
-31|.hdr-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.25)}
-32|.hdr-title{font-size:18px;font-weight:800;letter-spacing:-.5px}
-33|.hdr-sub{font-size:11px;color:var(--text2);margin-top:1px}
-34|.hdr-badge{font-size:10px;padding:4px 10px;border-radius:8px;background:var(--glow);color:var(--accent);font-weight:600;border:1px solid rgba(124,58,237,.15)}
-35|
-36|.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none}
-37|.tabs::-webkit-scrollbar{display:none}
-38|.tb{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;background:var(--surface);color:var(--text2);border:1px solid var(--border);cursor:pointer;transition:all .15s;box-shadow:var(--shadow);display:flex;align-items:center;gap:6px}
-39|.tb.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 12px rgba(124,58,237,.3)}
-40|.tb:active{transform:scale(.96)}
-41|
-42|.ct{padding:0 16px 16px}
-43|.pn{display:none;animation:fadeIn .25s ease}
-44|.pn.on{display:block}
-45|@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-46|
-47|.cd{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
-48|.cd-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600;display:flex;align-items:center;gap:6px}
-49|
-50|.in{width:100%;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s}
-51|.in:focus{border-color:var(--accent)}
-52|textarea.in{min-height:90px;resize:none}
-53|.in-row{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-54|.in-row .in{border:none;border-radius:0;flex:1;background:var(--surface)}
-55|.in-row .in:focus{border:none}
-56|.in-btn{padding:0 18px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px}
-57|
-58|.bt{width:100%;padding:14px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
-59|.bt:active{transform:scale(.97)}
-60|.bt-p{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.25)}
-61|.bt-o{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
-62|.bt-d{background:rgba(220,38,38,.08);color:var(--red);border:1px solid rgba(220,38,38,.12)}
-63|.bt-row{display:flex;gap:8px;margin-top:10px}.bt-row .bt{flex:1}
-64|
-65|.rs{margin-top:12px;padding:14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);font-size:14px;line-height:1.7;display:none}
-66|.rs.on{display:block}
-67|.rs.fa{text-align:right;direction:rtl}
-68|.rs-lb{font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
-69|
-70|.sorsa-box{text-align:center;padding:8px 0}
-71|.sorsa-ring{width:140px;height:140px;border-radius:50%;margin:0 auto 14px;position:relative;background:conic-gradient(var(--accent) 0deg,rgba(124,58,237,.06) 0deg);display:flex;align-items:center;justify-content:center;transition:background .5s}
-72|.sorsa-ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--surface);z-index:2}
-73|.sorsa-ring::after{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--accent),transparent 60%);opacity:.3;filter:blur(12px)}
-74|.sorsa-num{font-size:14px;font-weight:600;color:var(--text2);line-height:1;margin-top:10px;letter-spacing:.5px}
-75|.sorsa-score{font-size:38px;font-weight:900;color:var(--accent);line-height:1;margin-top:2px}
-76|.sorsa-tier{position:relative;z-index:1;display:inline-block;margin-top:4px;padding:3px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-77|.t1{background:rgba(220,38,38,.1);color:var(--red)}.t2{background:rgba(217,119,6,.1);color:var(--yellow)}.t3{background:rgba(217,119,6,.12);color:var(--yellow)}.t4{background:rgba(5,150,105,.1);color:var(--green)}.t5{background:rgba(124,58,237,.1);color:var(--accent)}
-78|.sorsa-user{font-size:13px;color:var(--text2);margin-bottom:12px}.sorsa-user b{color:var(--text);font-weight:600}
-79|.sorsa-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-80|.sorsa-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center}
-81|.sorsa-iv{font-size:16px;font-weight:700}.sorsa-il{font-size:9px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
-82|.sorsa-iv.g{color:var(--green)}.sorsa-iv.r{color:var(--red)}
-83|
-84|.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
-85|.tc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;box-shadow:var(--shadow)}
-86|.tc:active{transform:scale(.97);border-color:var(--accent)}
-87|.tc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#fff}
-88|.tc-title{font-size:13px;font-weight:700;margin-bottom:2px}
-89|.tc-desc{font-size:11px;color:var(--text2);line-height:1.3}
-90|.tc-line{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity .15s}
-91|.tc:active .tc-line{opacity:1}
-92|
-93|.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(248,246,241,.92);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex}
-94|.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;cursor:pointer;color:var(--text2);transition:color .12s}
-95|.ni.on{color:var(--accent)}
-96|.ni-lb{font-size:9px;font-weight:600;letter-spacing:.3px}
-97|
-98|.coins{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-99|.cp{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
-100|.cp.up{border-color:rgba(5,150,105,.15);color:var(--green)}.cp.down{border-color:rgba(220,38,38,.15);color:var(--red)}
-101|.cp .nm{color:var(--text2);font-weight:400}
-102|
-103|.ld{display:none;text-align:center;padding:24px}.ld.on{display:block}
-104|.sp{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .6s linear infinite;margin:0 auto 8px}
-105|@keyframes sp{to{transform:rotate(360deg)}}
-106|.ld-t{font-size:12px;color:var(--text2)}
-107|
-108|.tt{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(16px);padding:8px 16px;background:var(--text);color:var(--bg);border-radius:8px;font-size:12px;font-weight:600;opacity:0;transition:all .2s;z-index:200;pointer-events:none}
-109|.tt.on{opacity:1;transform:translateX(-50%) translateY(0)}
-110|
-111|.kb{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:10px}
-112|.kb.ok{background:rgba(5,150,105,.08);color:var(--green)}.kb.no{background:rgba(220,38,38,.08);color:var(--red)}
-113|
-114|.pnh{display:flex;align-items:center;gap:10px;padding:12px 0}
-115|.pnb{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
-116|.pnt{font-size:16px;font-weight:700}
-117|
-118|.cnv{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0}
-119|.cnb{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
-120|.cnb:disabled{opacity:.25}
-121|.cnc{font-size:11px;color:var(--text2)}
-122|
+.rs{margin-top:12px;padding:14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);font-size:14px;line-height:1.7;display:none}
+.rs.on{display:block}
+.rs.fa{text-align:right;direction:rtl}
+.rs-lb{font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+
+.sorsa-box{text-align:center;padding:8px 0}
+.sorsa-ring{width:140px;height:140px;border-radius:50%;margin:0 auto 14px;position:relative;background:conic-gradient(var(--accent) 0deg,rgba(124,58,237,.06) 0deg);display:flex;align-items:center;justify-content:center;transition:background .5s}
+.sorsa-ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--surface);z-index:2}
+.sorsa-ring::after{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--accent),transparent 60%);opacity:.3;filter:blur(12px)}
+.sorsa-num{font-size:14px;font-weight:600;color:var(--text2);line-height:1;margin-top:10px;letter-spacing:.5px}
+.sorsa-score{font-size:38px;font-weight:900;color:var(--accent);line-height:1;margin-top:2px}
+.sorsa-tier{position:relative;z-index:1;display:inline-block;margin-top:4px;padding:3px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.t1{background:rgba(220,38,38,.1);color:var(--red)}.t2{background:rgba(217,119,6,.1);color:var(--yellow)}.t3{background:rgba(217,119,6,.12);color:var(--yellow)}.t4{background:rgba(5,150,105,.1);color:var(--green)}.t5{background:rgba(124,58,237,.1);color:var(--accent)}
+.sorsa-user{font-size:13px;color:var(--text2);margin-bottom:12px}.sorsa-user b{color:var(--text);font-weight:600}
+.sorsa-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.sorsa-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center}
+.sorsa-iv{font-size:16px;font-weight:700}.sorsa-il{font-size:9px;color:var(--text2);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.sorsa-iv.g{color:var(--green)}.sorsa-iv.r{color:var(--red)}
+
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.tc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.tc:active{transform:scale(.97);border-color:var(--accent)}
+.tc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:#fff}
+.tc-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.tc-desc{font-size:11px;color:var(--text2);line-height:1.3}
+.tc-line{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity .15s}
+.tc:active .tc-line{opacity:1}
+
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(248,246,241,.92);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;cursor:pointer;color:var(--text2);transition:color .12s}
+.ni.on{color:var(--accent)}
+.ni-lb{font-size:9px;font-weight:600;letter-spacing:.3px}
+
+.coins{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cp{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+.cp.up{border-color:rgba(5,150,105,.15);color:var(--green)}.cp.down{border-color:rgba(220,38,38,.15);color:var(--red)}
+.cp .nm{color:var(--text2);font-weight:400}
+
+.ld{display:none;text-align:center;padding:24px}.ld.on{display:block}
+.sp{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .6s linear infinite;margin:0 auto 8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ld-t{font-size:12px;color:var(--text2)}
+
+.tt{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(16px);padding:8px 16px;background:var(--text);color:var(--bg);border-radius:8px;font-size:12px;font-weight:600;opacity:0;transition:all .2s;z-index:200;pointer-events:none}
+.tt.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.kb{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;margin-bottom:10px}
+.kb.ok{background:rgba(5,150,105,.08);color:var(--green)}.kb.no{background:rgba(220,38,38,.08);color:var(--red)}
+
+.pnh{display:flex;align-items:center;gap:10px;padding:12px 0}
+.pnb{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.pnt{font-size:16px;font-weight:700}
+
+.cnv{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0}
+.cnb{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
+.cnb:disabled{opacity:.25}
+.cnc{font-size:11px;color:var(--text2)}
+
 /* Research / Presearch tab */
 .pr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:480px){.pr-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:720px){.pr-grid{grid-template-columns:repeat(5,1fr)}}
 .pr-topic{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .pr-topic:active{transform:scale(.97);border-color:var(--accent)}
 .pr-topic .tc-line{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity .15s}
 .pr-topic:active .tc-line{opacity:1}
 .pr-topic-num{font-size:10px;color:var(--accent);font-weight:700;margin-bottom:4px}
 .pr-topic-title{font-size:13px;font-weight:600;line-height:1.3}
-.pr-ideas{display:none;margin-top:8px}
-.pr-ideas.on{display:block}
-.pr-idea{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:6px;cursor:pointer;transition:all .15s;font-size:13px;line-height:1.5;color:var(--text)}
+.pr-idea{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:6px;cursor:pointer;transition:all .15s;font-size:13px;line-height:1.5}
 .pr-idea:active{transform:scale(.98);border-color:var(--accent);background:var(--glow)}
 .pr-idea-icon{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-size:11px;font-weight:600;margin-top:4px}
-.pr-img-section{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .pr-img-row{display:flex;gap:8px;align-items:center;margin-top:8px}
 .pr-file-wrap{position:relative;flex-shrink:0}
 .pr-file-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.pr-file-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px dashed var(--accent);background:var(--glow);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pr-file-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px dashed var(--accent);background:var(--glow);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s}
 .pr-file-btn:hover{background:rgba(124,58,237,.12)}
 .pr-img-preview{width:40px;height:40px;border-radius:8px;object-fit:cover;display:none;border:1px solid var(--border)}
-.pr-gen-result{margin-top:10px}
 .pr-back-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:8px;padding:4px 0}
 .pr-back-btn:active{opacity:.6}
 </style>
-123|</head>
-124|<body>
-125|
-126|<div class="hdr">
-127|  <div class="hdr-row">
-128|    <div class="hdr-left">
-129|      <div class="hdr-logo">
-130|        <svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-131|      </div>
-132|      <div>
-133|        <div class="hdr-title">CryptoCopilot</div>
-134|        <div class="hdr-sub">AI-powered CT tools</div>
-135|      </div>
-136|    </div>
-137|    <div class="hdr-badge">
-138|      <svg class="ic ic-sm" style="display:inline;vertical-align:middle" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-139|      AI
-140|    </div>
-141|  </div>
-142|</div>
-143|
-144|<div class="tabs" id="tabs">
-145|  <div class="tb on" data-tab="home"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Home</div>
-146|  <div class="tb" data-tab="reply"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg> Reply</div>
-147|  <div class="tb" data-tab="translate"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/><path d="M16 4h4v4"/></svg> Translate</div>
-148|  <div class="tb" data-tab="project"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Tweet</div>
-149|  <div class="tb" data-tab="prices"><svg class="ic ic-sm" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Prices</div>
-150|  <div class="tb" data-tab="presearch"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8a3 3 0 0 0-3 3"/></svg> Research</div>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-row">
+    <div class="hdr-left">
+      <div class="hdr-logo">
+        <svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div>
+        <div class="hdr-title">CryptoCopilot</div>
+        <div class="hdr-sub">AI-powered CT tools</div>
+      </div>
+    </div>
+    <div class="hdr-badge">
+      <svg class="ic ic-sm" style="display:inline;vertical-align:middle" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+      AI
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tb on" data-tab="home"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Home</div>
+  <div class="tb" data-tab="reply"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg> Reply</div>
+  <div class="tb" data-tab="translate"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/><path d="M16 4h4v4"/></svg> Translate</div>
+  <div class="tb" data-tab="project"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Tweet</div>
+  <div class="tb" data-tab="prices"><svg class="ic ic-sm" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Prices</div>
+  <div class="tb" data-tab="presearch"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8a3 3 0 0 0-3 3"/></svg> Research</div>
   <div class="tb" data-tab="settings"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Settings</div>
-151|</div>
-152|
-153|<div class="ct">
-154|
-155|<!-- HOME -->
-156|<div class="pn on" id="p-home">
-157|  <div class="cd">
-158|    <div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Sorsa Score Lookup</div>
-159|    <div class="in-row">
-160|      <input class="in" type="text" id="sorsaInput" placeholder="@username" dir="ltr">
-161|      <button class="in-btn" onclick="checkSorsa()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search</button>
-162|    </div>
-163|    <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
-164|    <div class="sorsa-box" id="sorsaBox" style="display:none">
-165|      <div style="text-align:center"><div class="sorsa-ring" id="sorsaRing"><img id="sorsaAvatar" src="" style="position:absolute;width:128px;height:128px;border-radius:50%;object-fit:cover;z-index:3;display:none"></div><div class="sorsa-num">Score</div><div class="sorsa-score" id="sorsaNum">0</div></div>
-166|      <div class="sorsa-tier" id="sorsaTier"></div>
-167|      <div class="sorsa-user"><b id="sorsaUser"></b> on X</div>
-168|      <div class="sorsa-grid">
-169|        <div class="sorsa-item"><div class="sorsa-iv" id="sD">-</div><div class="sorsa-il">Delta</div></div>
-170|        <div class="sorsa-item"><div class="sorsa-iv" id="sB">-</div><div class="sorsa-il">Bots</div></div>
-171|        <div class="sorsa-item"><div class="sorsa-iv" id="sE">-</div><div class="sorsa-il">Engagement</div></div>
-172|      </div>
-173|      <a href="#" target="_blank" id="sorsaLink" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">View full profile <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg></a>
-174|    </div>
-175|  </div>
-176|  <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:4px 0 8px;display:flex;align-items:center;gap:6px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> AI Tools</div>
-177|  <div class="tg">
-178|    <div class="tc" onclick="go('reply')">
-179|      <div class="tc-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></div>
-180|      <div class="tc-title">Smart Reply</div>
-181|      <div class="tc-desc">AI-powered tweet replies</div><div class="tc-line"></div>
-182|    </div>
-183|    <div class="tc" onclick="go('translate')">
-184|      <div class="tc-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/><path d="M16 4h4v4"/></svg></div>
-185|      <div class="tc-title">Translate</div>
-186|      <div class="tc-desc">EN ↔ Persian</div><div class="tc-line"></div>
-187|    </div>
-188|    <div class="tc" onclick="go('project')">
-189|      <div class="tc-icon" style="background:linear-gradient(135deg,#059669,#34d399)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
-190|      <div class="tc-title">Project Tweet</div>
-191|      <div class="tc-desc">Generate CT posts</div><div class="tc-line"></div>
-192|    </div>
-193|    <div class="tc" onclick="go('prices')">
-194|      <div class="tc-icon" style="background:linear-gradient(135deg,#d97706,#fbbf24)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-195|      <div class="tc-title">Live Prices</div>
-196|      <div class="tc-desc">Real-time market data</div><div class="tc-line"></div>
-197|    </div>
-198|  </div>
-199|</div>
-200|
-201|<!-- REPLY -->
-202|<div class="pn" id="p-reply">
-203|  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Smart Reply</div></div>
-204|  <div class="cd">
-205|    <div class="cd-label">Tweet Content</div>
-206|    <textarea class="in" id="replyIn" placeholder="Paste the tweet here..." rows="4" dir="ltr"></textarea>
-207|    <button class="bt bt-p" style="margin-top:10px" onclick="genReply()"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate Reply</button>
-208|  </div>
-209|  <div class="ld" id="replyLd"><div class="sp"></div><div class="ld-t">AI is writing...</div></div>
-210|  <div class="rs" id="replyRs">
-211|    <div class="rs-lb">English Reply</div>
-212|    <div id="replyTxt"></div>
-213|    <div class="cnv" id="replyNav" style="display:none">
-214|      <button class="cnb" id="replyPrev" onclick="navR(-1)">‹</button>
-215|      <span class="cnc" id="replyCnt">1/2</span>
-216|      <button class="cnb" id="replyNext" onclick="navR(1)">›</button>
-217|    </div>
-218|    <div class="rs-lb" style="margin-top:8px">Persian Translation</div>
-219|    <div id="replyTr" class="rs fa show" style="margin-top:0;border:none;padding:0;background:none"></div>
-220|    <div class="bt-row">
-221|      <button class="bt bt-o" onclick="cp('replyTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
-222|      <button class="bt bt-o" onclick="genReply()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/><polyline points="21 3 21 9 15 9"/></svg> Again</button>
-223|    </div>
-224|  </div>
-225|</div>
-226|
-227|<!-- TRANSLATE -->
-228|<div class="pn" id="p-translate">
-229|  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Translate</div></div>
-230|  <div class="cd">
-231|    <div class="cd-label">English Text</div>
-232|    <textarea class="in" id="trIn" placeholder="Paste text here..." rows="4" dir="ltr"></textarea>
-233|    <button class="bt bt-p" style="margin-top:10px" onclick="doTr()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/></svg> Translate</button>
-234|  </div>
-235|  <div class="ld" id="trLd"><div class="sp"></div><div class="ld-t">Translating...</div></div>
-236|  <div class="rs fa" id="trRs">
-237|    <div class="rs-lb">Persian Translation</div>
-238|    <div id="trTxt"></div>
-239|    <button class="bt bt-o" style="margin-top:8px" onclick="cp('trTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
-240|  </div>
-241|</div>
-242|
-243|<!-- PROJECT -->
-244|<div class="pn" id="p-project">
-245|  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Project Tweet</div></div>
-246|  <div class="cd">
-247|    <div class="cd-label">Project Name</div>
-248|    <input class="in" type="text" id="projIn" placeholder="e.g. Bitcoin, Solana, PEPE...">
-249|    <button class="bt bt-p" style="margin-top:10px" onclick="genProj()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Generate</button>
-250|  </div>
-251|  <div class="ld" id="projLd"><div class="sp"></div><div class="ld-t">Writing tweet...</div></div>
-252|  <div class="rs" id="projRs">
-253|    <div class="rs-lb">Generated Tweet</div>
-254|    <div id="projTxt"></div>
-255|    <div class="rs-lb" style="margin-top:8px">Persian Translation</div>
-256|    <div id="projTr" class="rs fa" style="margin-top:0;border:none;padding:0;background:none"></div>
-257|    <div class="bt-row">
-258|      <button class="bt bt-o" onclick="cp('projTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
-259|      <button class="bt bt-o" onclick="genProj()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/><polyline points="21 3 21 9 15 9"/></svg> Again</button>
-260|    </div>
-261|  </div>
-262|</div>
-263|
-264|<!-- PRICES -->
-265|<div class="pn" id="p-prices">
-266|  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Live Prices</div></div>
-267|  <div class="cd">
-268|    <div class="cd-label">Search Coins</div>
-269|    <div class="in-row">
-270|      <input class="in" type="text" id="prIn" placeholder="$BTC ethereum solana..." dir="ltr">
-271|      <button class="in-btn" onclick="fetchP()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
-272|    </div>
-273|  </div>
-274|  <div class="ld" id="prLd"><div class="sp"></div><div class="ld-t">Fetching prices...</div></div>
-275|  <div class="coins" id="prRs"></div>
-276|</div>
-277|
-278|<!-- PRESEARCH / PROJECT RESEARCH -->
+</div>
+
+<div class="ct">
+
+<!-- HOME -->
+<div class="pn on" id="p-home">
+  <div class="cd">
+    <div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Sorsa Score Lookup</div>
+    <div class="in-row">
+      <input class="in" type="text" id="sorsaInput" placeholder="@username" dir="ltr">
+      <button class="in-btn" onclick="checkSorsa()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search</button>
+    </div>
+    <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
+    <div class="sorsa-box" id="sorsaBox" style="display:none">
+      <div style="text-align:center"><div class="sorsa-ring" id="sorsaRing"><img id="sorsaAvatar" src="" style="position:absolute;width:128px;height:128px;border-radius:50%;object-fit:cover;z-index:3;display:none"></div><div class="sorsa-num">Score</div><div class="sorsa-score" id="sorsaNum">0</div></div>
+      <div class="sorsa-tier" id="sorsaTier"></div>
+      <div class="sorsa-user"><b id="sorsaUser"></b> on X</div>
+      <div class="sorsa-grid">
+        <div class="sorsa-item"><div class="sorsa-iv" id="sD">-</div><div class="sorsa-il">Delta</div></div>
+        <div class="sorsa-item"><div class="sorsa-iv" id="sB">-</div><div class="sorsa-il">Bots</div></div>
+        <div class="sorsa-item"><div class="sorsa-iv" id="sE">-</div><div class="sorsa-il">Engagement</div></div>
+      </div>
+      <a href="#" target="_blank" id="sorsaLink" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:12px;color:var(--accent);text-decoration:none;font-weight:600">View full profile <svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg></a>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin:4px 0 8px;display:flex;align-items:center;gap:6px"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> AI Tools</div>
+  <div class="tg">
+    <div class="tc" onclick="go('reply')">
+      <div class="tc-icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></div>
+      <div class="tc-title">Smart Reply</div>
+      <div class="tc-desc">AI-powered tweet replies</div><div class="tc-line"></div>
+    </div>
+    <div class="tc" onclick="go('translate')">
+      <div class="tc-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/><path d="M16 4h4v4"/></svg></div>
+      <div class="tc-title">Translate</div>
+      <div class="tc-desc">EN ↔ Persian</div><div class="tc-line"></div>
+    </div>
+    <div class="tc" onclick="go('project')">
+      <div class="tc-icon" style="background:linear-gradient(135deg,#059669,#34d399)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
+      <div class="tc-title">Project Tweet</div>
+      <div class="tc-desc">Generate CT posts</div><div class="tc-line"></div>
+    </div>
+    <div class="tc" onclick="go('prices')">
+      <div class="tc-icon" style="background:linear-gradient(135deg,#d97706,#fbbf24)"><svg class="ic" style="color:#fff" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="tc-title">Live Prices</div>
+      <div class="tc-desc">Real-time market data</div><div class="tc-line"></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPLY -->
+<div class="pn" id="p-reply">
+  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Smart Reply</div></div>
+  <div class="cd">
+    <div class="cd-label">Tweet Content</div>
+    <textarea class="in" id="replyIn" placeholder="Paste the tweet here..." rows="4" dir="ltr"></textarea>
+    <button class="bt bt-p" style="margin-top:10px" onclick="genReply()"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate Reply</button>
+  </div>
+  <div class="ld" id="replyLd"><div class="sp"></div><div class="ld-t">AI is writing...</div></div>
+  <div class="rs" id="replyRs">
+    <div class="rs-lb">English Reply</div>
+    <div id="replyTxt"></div>
+    <div class="cnv" id="replyNav" style="display:none">
+      <button class="cnb" id="replyPrev" onclick="navR(-1)">‹</button>
+      <span class="cnc" id="replyCnt">1/2</span>
+      <button class="cnb" id="replyNext" onclick="navR(1)">›</button>
+    </div>
+    <div class="rs-lb" style="margin-top:8px">Persian Translation</div>
+    <div id="replyTr" class="rs fa show" style="margin-top:0;border:none;padding:0;background:none"></div>
+    <div class="bt-row">
+      <button class="bt bt-o" onclick="cp('replyTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
+      <button class="bt bt-o" onclick="genReply()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/><polyline points="21 3 21 9 15 9"/></svg> Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSLATE -->
+<div class="pn" id="p-translate">
+  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Translate</div></div>
+  <div class="cd">
+    <div class="cd-label">English Text</div>
+    <textarea class="in" id="trIn" placeholder="Paste text here..." rows="4" dir="ltr"></textarea>
+    <button class="bt bt-p" style="margin-top:10px" onclick="doTr()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/></svg> Translate</button>
+  </div>
+  <div class="ld" id="trLd"><div class="sp"></div><div class="ld-t">Translating...</div></div>
+  <div class="rs fa" id="trRs">
+    <div class="rs-lb">Persian Translation</div>
+    <div id="trTxt"></div>
+    <button class="bt bt-o" style="margin-top:8px" onclick="cp('trTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
+  </div>
+</div>
+
+<!-- PROJECT -->
+<div class="pn" id="p-project">
+  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Project Tweet</div></div>
+  <div class="cd">
+    <div class="cd-label">Project Name</div>
+    <input class="in" type="text" id="projIn" placeholder="e.g. Bitcoin, Solana, PEPE...">
+    <button class="bt bt-p" style="margin-top:10px" onclick="genProj()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Generate</button>
+  </div>
+  <div class="ld" id="projLd"><div class="sp"></div><div class="ld-t">Writing tweet...</div></div>
+  <div class="rs" id="projRs">
+    <div class="rs-lb">Generated Tweet</div>
+    <div id="projTxt"></div>
+    <div class="rs-lb" style="margin-top:8px">Persian Translation</div>
+    <div id="projTr" class="rs fa" style="margin-top:0;border:none;padding:0;background:none"></div>
+    <div class="bt-row">
+      <button class="bt bt-o" onclick="cp('projTxt')"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> Copy</button>
+      <button class="bt bt-o" onclick="genProj()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/><polyline points="21 3 21 9 15 9"/></svg> Again</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRICES -->
+<div class="pn" id="p-prices">
+  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Live Prices</div></div>
+  <div class="cd">
+    <div class="cd-label">Search Coins</div>
+    <div class="in-row">
+      <input class="in" type="text" id="prIn" placeholder="$BTC ethereum solana..." dir="ltr">
+      <button class="in-btn" onclick="fetchP()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+    </div>
+  </div>
+  <div class="ld" id="prLd"><div class="sp"></div><div class="ld-t">Fetching prices...</div></div>
+  <div class="coins" id="prRs"></div>
+</div>
+
+<!-- PRESEARCH / PROJECT RESEARCH -->
 <div class="pn" id="p-presearch">
   <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Project Research</div></div>
-  
-  <!-- URL Input -->
   <div class="cd" id="prUrlCard">
     <div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Project URL</div>
     <div class="in-row">
@@ -520,13 +308,9 @@ async function prRegenerate() {
       <button class="in-btn" onclick="prAnalyze()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Analyze</button>
     </div>
   </div>
-  
-  <!-- Loading -->
   <div class="ld" id="prAnalyzeLd"><div class="sp"></div><div class="ld-t">Scraping project...</div></div>
-  
-  <!-- Image Upload Section -->
   <div class="cd" id="prImgCard" style="display:none">
-    <div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Reference Image & Style</div>
+    <div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Reference Image &amp; Style</div>
     <div class="pr-img-row">
       <div class="pr-file-wrap">
         <div class="pr-file-btn" id="prFileBtn">
@@ -539,14 +323,8 @@ async function prRegenerate() {
       <input class="in" type="text" id="prStyleIn" placeholder="Describe desired style (e.g. dark futuristic, minimal...)" dir="ltr" style="flex:1">
     </div>
   </div>
-
-  <!-- Topics Container -->
   <div id="prTopicsWrap"></div>
-  
-  <!-- Ideas Container -->
   <div id="prIdeasWrap"></div>
-
-  <!-- Generated Tweet -->
   <div class="rs" id="prTweetRs">
     <div class="rs-lb">Generated Tweet</div>
     <div id="prTweetTxt"></div>
@@ -560,70 +338,70 @@ async function prRegenerate() {
 </div>
 
 <!-- SETTINGS -->
-279|<div class="pn" id="p-settings">
-280|  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Settings</div></div>
-281|  <div class="cd">
-282|    <div class="cd-label">OpenRouter API Key</div>
-283|    <div class="kb" id="kbSt"></div>
-284|    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Get your key at <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:600">openrouter.ai/keys</a></div>
-285|    <input class="in" type="text" id="keyIn" placeholder="sk-or-v1-..." dir="ltr">
-286|    <button class="bt bt-p" style="margin-top:10px" onclick="saveK()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
-287|    <button class="bt bt-o" style="margin-top:6px" onclick="testKey()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Test Key</button>
-288|    <button class="bt bt-d" style="margin-top:6px" onclick="delK()"><svg class="ic ic-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
-289|  </div>
-290|</div>
-291|
-292|</div>
-293|
-294|<div class="bnav">
-295|  <div class="ni on" data-tab="home"><svg class="ic" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><div class="ni-lb">Home</div></div>
-296|  <div class="ni" data-tab="reply"><svg class="ic" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg><div class="ni-lb">Reply</div></div>
-297|  <div class="ni" data-tab="translate"><svg class="ic" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/></svg><div class="ni-lb">Translate</div></div>
-298|  <div class="ni" data-tab="project"><svg class="ic" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><div class="ni-lb">Tweet</div></div>
-299|  <div class="ni" data-tab="prices"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><div class="ni-lb">Prices</div></div>
-300|  <div class="ni" data-tab="presearch"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8a3 3 0 0 0-3 3"/></svg><div class="ni-lb">Research</div></div>
+<div class="pn" id="p-settings">
+  <div class="pnh"><button class="pnb" onclick="go('home')"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button><div class="pnt">Settings</div></div>
+  <div class="cd">
+    <div class="cd-label">OpenRouter API Key</div>
+    <div class="kb" id="kbSt"></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Get your key at <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--accent);font-weight:600">openrouter.ai/keys</a></div>
+    <input class="in" type="text" id="keyIn" placeholder="sk-or-v1-..." dir="ltr">
+    <button class="bt bt-p" style="margin-top:10px" onclick="saveK()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save</button>
+    <button class="bt bt-o" style="margin-top:6px" onclick="testKey()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Test Key</button>
+    <button class="bt bt-d" style="margin-top:6px" onclick="delK()"><svg class="ic ic-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</button>
+  </div>
+</div>
+
+</div>
+
+<div class="bnav">
+  <div class="ni on" data-tab="home"><svg class="ic" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><div class="ni-lb">Home</div></div>
+  <div class="ni" data-tab="reply"><svg class="ic" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg><div class="ni-lb">Reply</div></div>
+  <div class="ni" data-tab="translate"><svg class="ic" viewBox="0 0 24 24"><path d="m5 8 6 6"/><path d="M4 14 8 8"/><path d="M15 4a2 2 0 1 0 0 4"/><path d="M9.5 10.5 15 16"/><path d="M2 20h20"/></svg><div class="ni-lb">Translate</div></div>
+  <div class="ni" data-tab="project"><svg class="ic" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg><div class="ni-lb">Tweet</div></div>
+  <div class="ni" data-tab="prices"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><div class="ni-lb">Prices</div></div>
+  <div class="ni" data-tab="presearch"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8a3 3 0 0 0-3 3"/></svg><div class="ni-lb">Research</div></div>
   <div class="ni" data-tab="settings"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><div class="ni-lb">Settings</div></div>
-301|</div>
-302|
-303|<div class="tt" id="tt"></div>
-304|
-305|<script>
-306|const tg=window.Telegram?.WebApp;
-307|if(tg){tg.ready();tg.expand();if(tg.colorScheme==='dark')document.body.setAttribute('data-theme','dark');tg.onEvent('themeChanged',()=>{document.body.setAttribute('data-theme',tg.colorScheme==='dark'?'dark':'')})}
-308|function go(t){document.querySelectorAll('.pn').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.tab===t));document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));window.scrollTo(0,0)}
-309|document.querySelectorAll('.ni,.tb').forEach(e=>{e.addEventListener('click',()=>go(e.dataset.tab))});
-310|function toast(m){const t=document.getElementById('tt');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800)}
-311|function cp(id){navigator.clipboard?.writeText(document.getElementById(id).innerText).then(()=>toast('✓ Copied'))}
-312|function showLd(id){document.getElementById(id).classList.add('on')}
-313|function hideLd(id){document.getElementById(id).classList.remove('on')}
-314|function gk(){return localStorage.getItem('cc_api_key')||''}
-315|function uks(){const e=document.getElementById('kbSt'),k=gk();if(k){e.className='kb ok';e.textContent='✓ Connected ('+k.slice(0,12)+'...)'}else{e.className='kb no';e.textContent='⚠ No key'}}
-316|function saveK(){const k=document.getElementById('keyIn').value.trim();if(!k)return toast('Enter key');localStorage.setItem('cc_api_key',k);document.getElementById('keyIn').value='';uks();toast('✓ Saved')}
-317|function delK(){localStorage.removeItem('cc_api_key');uks();toast('Deleted')}
-318|uks();
-319|async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json();if(d.error)throw new Error(d.error.message||d.error);return d}
-320|function rk(){if(!gk()){toast('Set API key first');go('settings');return false}return true}
-321|async function testKey(){const k=document.getElementById('keyIn').value.trim()||gk();if(!k)return toast('Enter a key first');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:*** hi',user:'test'})});toast(d.text?'Key works!':'No response')}catch(e){toast('Key invalid: '+e.message.substring(0,60))}}
-322|async function checkSorsa(){const u=document.getElementById('sorsaInput').value.trim().replace('@','');if(!u)return toast('Enter username');document.getElementById('sorsaBox').style.display='none';showLd('sorsaLd');const d=await api('/api/sorsa?username='+encodeURIComponent(u));hideLd('sorsaLd');if(!d.found)return toast('Not found');const ring=document.getElementById('sorsaRing');ring.style.display='flex';const av=document.getElementById('sorsaAvatar');if(d.avatar){av.src=d.avatar;av.style.display='block'}else{av.style.display='none'}const pct=Math.min(d.score/6000,1);ring.style.background=`conic-gradient(var(--accent) ${pct*360}deg, rgba(124,58,237,.06) 0)`;document.getElementById('sorsaNum').textContent=d.score.toLocaleString();const tb=document.getElementById('sorsaTier');if(d.tier){tb.textContent=d.tier;tb.className='sorsa-tier t'+parseInt(d.tier)}document.getElementById('sorsaUser').textContent='@'+d.username;document.getElementById('sorsaBox').style.display='block';document.getElementById('sD').textContent=d.delta!=null?(d.delta>=0?'+':'')+d.delta.toFixed(1):'-';document.getElementById('sD').className='sorsa-iv '+(d.delta>0?'g':d.delta<0?'r':'');document.getElementById('sB').textContent=d.botFollowers?d.botFollowers+'%':'-';document.getElementById('sE').textContent=d.engagementRate?d.engagementRate+'%':'-';document.getElementById('sorsaLink').href='https://app.sorsa.io/profile/'+d.username}
-323|let rC=[],rT=[],rI=0;
-324|async function genReply(){const t=document.getElementById('replyIn').value.trim();if(!t)return toast('Paste tweet text');if(!rk())return;showLd('replyLd');document.getElementById('replyRs').classList.remove('on');try{const st=["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];rC=[];rT=[];for(let i=0;i<2;i++){const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),s...rite a short reply to this crypto tweet\n\nRules:\n- Max 1 to 2 sentences only very short\n- Never use emojis or dashes\n- Sometimes make small typos like a real human\n- Say something original dont repeat the tweet\n- Write in English casual CT degen voice\n- Style: ${st[i]}\n- No hashtags\n- Output ONLY the reply nothing else`,user:t})});if(d.text)rC.push(d.text);const tr=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),s...late ONLY the following text into Persian. No explanation, no extra text.',user:d.text||''})});rT.push(tr.text||'')}hideLd('replyLd');if(!rC.length)return toast('Error');rI=0;showR()}catch(e){hideLd('replyLd');toast('Error: '+e.message.substring(0,80))}}
-325|function showR(){document.getElementById('replyRs').classList.add('on');document.getElementById('replyTxt').innerText=rC[rI]||'';document.getElementById('replyTr').innerText=rT[rI]||'';document.getElementById('replyCnt').textContent=`${rI+1}/${rC.length}`;document.getElementById('replyNav').style.display=rC.length>1?'flex':'none';document.getElementById('replyPrev').disabled=rI===0;document.getElementById('replyNext').disabled=rI===rC.length-1}
-326|function navR(d){rI=Math.max(0,Math.min(rC.length-1,rI+d));showR()}
-327|async function doTr(){const t=document.getElementById('trIn').value.trim();if(!t)return toast('Paste text');if(!rk())return;showLd('trLd');document.getElementById('trRs').classList.remove('on');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),s...late the following text into Persian. Only the translation, nothing else.',user:t})});hideLd('trLd');if(d.text){document.getElementById('trTxt').innerText=d.text;document.getElementById('trRs').classList.add('on')}}catch(e){hideLd('trLd');toast('Error: '+e.message.substring(0,80))}}
-328|async function genProj(){const p=document.getElementById('projIn').value.trim();if(!p)return toast('Enter project name');if(!rk())return;showLd('projLd');document.getElementById('projRs').classList.remove('on');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),s...rite a crypto twitter post about ${p}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,user:''})});hideLd('projLd');if(d.text){document.getElementById('projTxt').innerText=d.text;const tr=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),s...late ONLY the following text into Persian. No explanation, no extra text.',user:d.text})});document.getElementById('projTr').innerText=tr.text||'';document.getElementById('projRs').classList.add('on')}}catch(e){hideLd('projLd');toast('Error: '+e.message.substring(0,80))}}
-329|async function fetchP(){const t=document.getElementById('prIn').value.trim();if(!t)return toast('Enter coin name');showLd('prLd');document.getElementById('prRs').innerHTML='';const d=await api('/api/prices?text='+encodeURIComponent(t));hideLd('prLd');const c=document.getElementById('prRs');if(!d.coins?.length){c.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>';return}c.innerHTML=d.coins.map(coin=>{const up=coin.change>=0;const pr=coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);return `<div class="cp ${up?'up':'down'}"><span class="nm">${coin.name}</span> ${pr} ${up?'+':''}${coin.change.toFixed(1)}%</div>`}).join('')}
-330|
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();if(tg.colorScheme==='dark')document.body.setAttribute('data-theme','dark');tg.onEvent('themeChanged',()=>{document.body.setAttribute('data-theme',tg.colorScheme==='dark'?'dark':'')})}
+function go(t){document.querySelectorAll('.pn').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.tab===t));document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));window.scrollTo(0,0)}
+document.querySelectorAll('.ni,.tb').forEach(e=>{e.addEventListener('click',()=>go(e.dataset.tab))});
+function toast(m){const t=document.getElementById('tt');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800)}
+function cp(id){navigator.clipboard?.writeText(document.getElementById(id).innerText).then(()=>toast('✓ Copied'))}
+function showLd(id){document.getElementById(id).classList.add('on')}
+function hideLd(id){document.getElementById(id).classList.remove('on')}
+function gk(){return localStorage.getItem('cc_api_key')||''}
+function uks(){const e=document.getElementById('kbSt'),k=gk();if(k){e.className='kb ok';e.textContent='✓ Connected ('+k.slice(0,12)+'...)'}else{e.className='kb no';e.textContent='⚠ No key'}}
+function saveK(){const k=document.getElementById('keyIn').value.trim();if(!k)return toast('Enter key');localStorage.setItem('cc_api_key',k);document.getElementById('keyIn').value='';uks();toast('✓ Saved')}
+function delK(){localStorage.removeItem('cc_api_key');uks();toast('Deleted')}
+uks();
+async function api(u,o={}){const r=await fetch(u,{headers:{'Content-Type':'application/json'},...o});const d=await r.json();if(d.error)throw new Error(d.error.message||d.error);return d}
+function rk(){if(!gk()){toast('Set API key first');go('settings');return false}return true}
+async function testKey(){const k=document.getElementById('keyIn').value.trim()||gk();if(!k)return toast('Enter a key first');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() hi',user:'test'})});toast(d.text?'Key works!':'No response')}catch(e){toast('Key invalid: '+e.message.substring(0,60))}}
+async function checkSorsa(){const u=document.getElementById('sorsaInput').value.trim().replace('@','');if(!u)return toast('Enter username');document.getElementById('sorsaBox').style.display='none';showLd('sorsaLd');const d=await api('/api/sorsa?username='+encodeURIComponent(u));hideLd('sorsaLd');if(!d.found)return toast('Not found');const ring=document.getElementById('sorsaRing');ring.style.display='flex';const av=document.getElementById('sorsaAvatar');if(d.avatar){av.src=d.avatar;av.style.display='block'}else{av.style.display='none'}const pct=Math.min(d.score/6000,1);ring.style.background=`conic-gradient(var(--accent) ${pct*360}deg, rgba(124,58,237,.06) 0)`;document.getElementById('sorsaNum').textContent=d.score.toLocaleString();const tb=document.getElementById('sorsaTier');if(d.tier){tb.textContent=d.tier;tb.className='sorsa-tier t'+parseInt(d.tier)}document.getElementById('sorsaUser').textContent='@'+d.username;document.getElementById('sorsaBox').style.display='block';document.getElementById('sD').textContent=d.delta!=null?(d.delta>=0?'+':'')+d.delta.toFixed(1):'-';document.getElementById('sD').className='sorsa-iv '+(d.delta>0?'g':d.delta<0?'r':'');document.getElementById('sB').textContent=d.botFollowers?d.botFollowers+'%':'-';document.getElementById('sE').textContent=d.engagementRate?d.engagementRate+'%':'-';document.getElementById('sorsaLink').href='https://app.sorsa.io/profile/'+d.username}
+let rC=[],rT=[],rI=0;
+async function genReply(){const t=document.getElementById('replyIn').value.trim();if(!t)return toast('Paste tweet text');if(!rk())return;showLd('replyLd');document.getElementById('replyRs').classList.remove('on');try{const st=["praise the project enthusiastically","ask a smart question","make a witty joke","share a hot take","agree with excitement and add alpha"];rC=[];rT=[];for(let i=0;i<2;i++){const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() a short reply to this crypto tweet\n\nRules:\n- Max 1 to 2 sentences only very short\n- Never use emojis or dashes\n- Sometimes make small typos like a real human\n- Say something original dont repeat the tweet\n- Write in English casual CT degen voice\n- Style: ${st[i]}\n- No hashtags\n- Output ONLY the reply nothing else`,user:t})});if(d.text)rC.push(d.text);const tr=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() ONLY the following text into Persian. No explanation, no extra text.',user:d.text||''})});rT.push(tr.text||'')}hideLd('replyLd');if(!rC.length)return toast('Error');rI=0;showR()}catch(e){hideLd('replyLd');toast('Error: '+e.message.substring(0,80))}}
+function showR(){document.getElementById('replyRs').classList.add('on');document.getElementById('replyTxt').innerText=rC[rI]||'';document.getElementById('replyTr').innerText=rT[rI]||'';document.getElementById('replyCnt').textContent=`${rI+1}/${rC.length}`;document.getElementById('replyNav').style.display=rC.length>1?'flex':'none';document.getElementById('replyPrev').disabled=rI===0;document.getElementById('replyNext').disabled=rI===rC.length-1}
+function navR(d){rI=Math.max(0,Math.min(rC.length-1,rI+d));showR()}
+async function doTr(){const t=document.getElementById('trIn').value.trim();if(!t)return toast('Paste text');if(!rk())return;showLd('trLd');document.getElementById('trRs').classList.remove('on');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() the following text into Persian. Only the translation, nothing else.',user:t})});hideLd('trLd');if(d.text){document.getElementById('trTxt').innerText=d.text;document.getElementById('trRs').classList.add('on')}}catch(e){hideLd('trLd');toast('Error: '+e.message.substring(0,80))}}
+async function genProj(){const p=document.getElementById('projIn').value.trim();if(!p)return toast('Enter project name');if(!rk())return;showLd('projLd');document.getElementById('projRs').classList.remove('on');try{const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() a crypto twitter post about ${p}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,user:''})});hideLd('projLd');if(d.text){document.getElementById('projTxt').innerText=d.text;const tr=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk() ONLY the following text into Persian. No explanation, no extra text.',user:d.text})});document.getElementById('projTr').innerText=tr.text||'';document.getElementById('projRs').classList.add('on')}}catch(e){hideLd('projLd');toast('Error: '+e.message.substring(0,80))}}
+async function fetchP(){const t=document.getElementById('prIn').value.trim();if(!t)return toast('Enter coin name');showLd('prLd');document.getElementById('prRs').innerHTML='';const d=await api('/api/prices?text='+encodeURIComponent(t));hideLd('prLd');const c=document.getElementById('prRs');if(!d.coins?.length){c.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>';return}c.innerHTML=d.coins.map(coin=>{const up=coin.change>=0;const pr=coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);return `<div class="cp ${up?'up':'down'}"><span class="nm">${coin.name}</span> ${pr} ${up?'+':''}${coin.change.toFixed(1)}%</div>`}).join('')}
+
 /* === Project Research / Presearch === */
-let prTopicsData = [];
-let prSelectedTopic = null;
-let prSelectedIdea = null;
-let prScrapedContent = '';
+var prTopicsData = [];
+var prSelectedTopic = null;
+var prSelectedIdea = null;
+var prScrapedContent = '';
 
 function prPreviewImg(input) {
-  const preview = document.getElementById('prImgPreview');
-  const btn = document.getElementById('prFileBtn');
+  var preview = document.getElementById('prImgPreview');
+  var btn = document.getElementById('prFileBtn');
   if (input.files && input.files[0]) {
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
       preview.style.display = 'block';
@@ -634,11 +412,9 @@ function prPreviewImg(input) {
 }
 
 async function prAnalyze() {
-  const url = document.getElementById('prUrlIn').value.trim();
+  var url = document.getElementById('prUrlIn').value.trim();
   if (!url) return toast('Enter project URL');
   if (!rk()) return;
-  
-  // Reset state
   document.getElementById('prTopicsWrap').innerHTML = '';
   document.getElementById('prIdeasWrap').innerHTML = '';
   document.getElementById('prTweetRs').classList.remove('on');
@@ -646,12 +422,9 @@ async function prAnalyze() {
   prTopicsData = [];
   prSelectedTopic = null;
   prSelectedIdea = null;
-  
   showLd('prAnalyzeLd');
-  
   try {
-    // Scrape the URL
-    const scrapeResp = await api('/api/ai', {
+    var scrapeResp = await api('/api/ai', {
       method: 'POST',
       body: JSON.stringify({
         apiKey: gk(),
@@ -660,37 +433,27 @@ async function prAnalyze() {
       })
     });
     prScrapedContent = scrapeResp.text || '';
-    
-    // Generate 25 topics from the scraped content
-    const topicsResp = await api('/api/ai', {
+    var topicsResp = await api('/api/ai', {
       method: 'POST',
       body: JSON.stringify({
         apiKey: gk(),
-        system: `You are a crypto content strategist. Given scraped web content, generate exactly 25 distinct research topics that could be turned into crypto Twitter posts. Return ONLY valid JSON: [{"id":1,"title":"Topic Title","ideas":["idea1","idea2","idea3","idea4","idea5"]}] — each topic must have 4-6 ideas. No markdown, no explanation.`,
+        system: 'You are a crypto content strategist. Given scraped web content, generate exactly 25 distinct research topics that could be turned into crypto Twitter posts. Return ONLY valid JSON: [{"id":1,"title":"Topic Title","ideas":["idea1","idea2","idea3","idea4","idea5"]}] \u2014 each topic must have 4-6 ideas. No markdown, no explanation.',
         user: 'Scraped content:\n\n' + prScrapedContent.substring(0, 8000) + '\n\nGenerate 25 topics with ideas.'
       })
     });
-    
-    // Parse topics
-    let topicsRaw = topicsResp.text || '[]';
-    // Strip markdown code fences if present
+    var topicsRaw = topicsResp.text || '[]';
     topicsRaw = topicsRaw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     try {
       prTopicsData = JSON.parse(topicsRaw);
     } catch(e) {
-      // Try to extract JSON array from response
-      const match = topicsRaw.match(/\[.*\]/s);
+      var match = topicsRaw.match(/\[.*\]/s);
       if (match) prTopicsData = JSON.parse(match[0]);
       else throw new Error('Could not parse topics');
     }
-    
-    // Limit to 25
     prTopicsData = prTopicsData.slice(0, 25);
-    
     hideLd('prAnalyzeLd');
     document.getElementById('prImgCard').style.display = 'block';
     prRenderTopics();
-    
   } catch(e) {
     hideLd('prAnalyzeLd');
     toast('Error: ' + e.message.substring(0, 80));
@@ -698,9 +461,9 @@ async function prAnalyze() {
 }
 
 function prRenderTopics() {
-  const wrap = document.getElementById('prTopicsWrap');
-  let html = '<div class="cd"><div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Topics (' + prTopicsData.length + ')</div><div class="pr-grid">';
-  
+  var wrap = document.getElementById('prTopicsWrap');
+  var html = '<div class="cd"><div class="cd-label"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> ' + prTopicsData.length + ' Topics Found</div>';
+  html += '<div class="pr-grid">';
   prTopicsData.forEach(function(topic, idx) {
     html += '<div class="pr-topic" onclick="prSelectTopic(' + idx + ')" id="prTopic' + idx + '">';
     html += '<div class="pr-topic-num">#' + (idx + 1) + '</div>';
@@ -708,34 +471,28 @@ function prRenderTopics() {
     html += '<div class="tc-line"></div>';
     html += '</div>';
   });
-  
   html += '</div></div>';
   wrap.innerHTML = html;
 }
 
 function prSelectTopic(idx) {
   prSelectedTopic = idx;
-  const topic = prTopicsData[idx];
+  var topic = prTopicsData[idx];
   document.getElementById('prIdeasWrap').innerHTML = '';
   document.getElementById('prTweetRs').classList.remove('on');
-  
-  // Highlight selected, hide others
   document.querySelectorAll('.pr-topic').forEach(function(el, i) {
     el.style.opacity = i === idx ? '1' : '0.5';
     el.style.borderColor = i === idx ? 'var(--accent)' : 'var(--border)';
   });
-  
-  const ideas = topic.ideas || [];
-  let html = '<div class="cd"><div class="pr-back-btn" onclick="prDeselectTopic()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> All Topics</div>';
-  html += '<div class="cd-label" style="margin-bottom:6px">' + prEscHtml(topic.title) + '</div>';
-  
+  var ideas = topic.ideas || [];
+  var html = '<div class="cd"><div class="pr-back-btn" onclick="prDeselectTopic()"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> All Topics</div>';
+  html += '<div class="cd-label" style="margin-bottom:6px">' + prEscHtml(topic.title || 'Topic') + '</div>';
   ideas.forEach(function(idea, i) {
     html += '<div class="pr-idea" onclick="prSelectIdea(' + idx + ',' + i + ')">';
     html += prEscHtml(idea);
     html += '<div class="pr-idea-icon"><svg class="ic ic-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate tweet</div>';
     html += '</div>';
   });
-  
   html += '</div>';
   document.getElementById('prIdeasWrap').innerHTML = html;
 }
@@ -750,30 +507,24 @@ function prDeselectTopic() {
 }
 
 function prEscHtml(str) {
-  const d = document.createElement('div');
+  var d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
 }
 
 async function prSelectIdea(topicIdx, ideaIdx) {
-  const topic = prTopicsData[topicIdx];
-  const idea = (topic.ideas || [])[ideaIdx];
+  var topic = prTopicsData[topicIdx];
+  var idea = (topic.ideas || [])[ideaIdx];
   if (!idea) return;
-  
   prSelectedIdea = { topicIdx: topicIdx, ideaIdx: ideaIdx };
-  
   if (!rk()) return;
-  
-  // Show loading
-  const wrap = document.getElementById('prTweetRs');
+  var wrap = document.getElementById('prTweetRs');
   wrap.classList.remove('on');
   wrap.insertAdjacentHTML('beforebegin', '<div class="ld on" id="prTweetLd"><div class="sp"></div><div class="ld-t">Generating tweet...</div></div>');
-  
   try {
-    const styleDesc = document.getElementById('prStyleIn').value.trim();
-    let extraStyle = styleDesc ? '\n- Visual style reference: ' + styleDesc : '';
-    
-    const tweetResp = await api('/api/ai', {
+    var styleDesc = document.getElementById('prStyleIn').value.trim();
+    var extraStyle = styleDesc ? '\n- Visual style reference: ' + styleDesc : '';
+    var tweetResp = await api('/api/ai', {
       method: 'POST',
       body: JSON.stringify({
         apiKey: gk(),
@@ -781,13 +532,10 @@ async function prSelectIdea(topicIdx, ideaIdx) {
         user: 'Write a crypto Twitter post based on this topic and idea.\n\nTopic: ' + (topic.title || '') + '\nIdea: ' + idea + '\nProject context: ' + prScrapedContent.substring(0, 3000) + '\n\nRules:\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet' + extraStyle
       })
     });
-    
-    const tweetText = tweetResp.text || '';
-    
-    // Translate to Persian
-    let persianText = '';
+    var tweetText = tweetResp.text || '';
+    var persianText = '';
     try {
-      const trResp = await api('/api/ai', {
+      var trResp = await api('/api/ai', {
         method: 'POST',
         body: JSON.stringify({
           apiKey: gk(),
@@ -796,20 +544,16 @@ async function prSelectIdea(topicIdx, ideaIdx) {
         })
       });
       persianText = trResp.text || '';
-    } catch(e) { /* translation optional */ }
-    
-    // Remove loading
-    const ld = document.getElementById('prTweetLd');
+    } catch(trErr) { /* translation optional */ }
+    var ld = document.getElementById('prTweetLd');
     if (ld) ld.remove();
-    
     document.getElementById('prTweetTxt').innerText = tweetText;
     document.getElementById('prTweetTr').innerText = persianText;
     wrap.classList.add('on');
     wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
   } catch(e) {
-    const ld = document.getElementById('prTweetLd');
-    if (ld) ld.remove();
+    var ld2 = document.getElementById('prTweetLd');
+    if (ld2) ld2.remove();
     toast('Error: ' + e.message.substring(0, 80));
   }
 }
@@ -821,6 +565,5 @@ async function prRegenerate() {
 }
 
 </script>
-331|</body>
-332|</html>
-333|
+</body>
+</html>
