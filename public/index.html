@@ -118,20 +118,13 @@ textarea.in{min-height:90px;resize:none}
 .cnb{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 .cnb:disabled{opacity:.25}
 .cnc{font-size:11px;color:var(--text2)}
-/* Skeleton Loading Animation */
-.skeleton{position:relative;overflow:hidden;background:#f3e8ff;border-radius:8px;height:20px}
-.skeleton::after{content:"";position:absolute;top:0;right:-50%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);animation:shimmer 1.5s infinite}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
-.skeleton-circle{width:120px;height:120px;border-radius:50%}
-.skeleton-card{height:100px;border-radius:16px}
-/* Haptic Feedback */
-.btn-haptic{transition:transform 0.1s ease,box-shadow 0.1s ease}
-.btn-haptic:active{transform:scale(0.95)!important;box-shadow:inset 0 2px 4px rgba(0,0,0,0.2)!important}
-.card-haptic{transition:transform 0.15s ease}
-.card-haptic:active{transform:scale(0.97)}
-/* Pulse animation for active elements */
-.pulse{animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+/* Skeleton Loading */
+.sk{position:relative;overflow:hidden;background:var(--surface2);border-radius:12px}
+.sk::after{content:"";position:absolute;top:0;right:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(124,58,237,.1),transparent);animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%{transform:translateX(0)}100%{transform:translateX(300%)}}
+.sk-ring{width:110px;height:110px;border-radius:50%;margin:0 auto 12px}
+.sk-line{height:14px;margin:8px auto}
+.sk-line.s1{width:60%}.sk-line.s2{width:40%}.sk-line.s3{width:70%}
 </style>
 </head>
 <body>
@@ -173,7 +166,7 @@ textarea.in{min-height:90px;resize:none}
       <input class="in" type="text" id="sorsaInput" placeholder="@username" dir="ltr">
       <button class="in-btn" onclick="checkSorsa()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search</button>
     </div>
-    <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
+    <div id="sorsaLd"><div class="sk sk-ring"></div><div class="sk sk-line s1"></div><div class="sk sk-line s2"></div></div>
     <div class="sorsa-box" id="sorsaBox" style="display:none">
       <div class="sorsa-ring" id="sorsaRing"><div class="sorsa-num" id="sorsaNum">0</div></div>
       <div class="sorsa-tier" id="sorsaTier"></div>
@@ -338,13 +331,10 @@ async function genProj(){const p=document.getElementById('projIn').value.trim();
 async function fetchP(){const t=document.getElementById('prIn').value.trim();if(!t)return toast('Enter coin name');showLd('prLd');document.getElementById('prRs').innerHTML='';const d=await api('/api/prices?text='+encodeURIComponent(t));hideLd('prLd');const c=document.getElementById('prRs');if(!d.coins?.length){c.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>';return}c.innerHTML=d.coins.map(coin=>{const up=coin.change>=0;const pr=coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);return `<div class="cp ${up?'up':'down'}"><span class="nm">${coin.name}</span> ${pr} ${up?'+':''}${coin.change.toFixed(1)}%</div>`}).join('')}
 </script>
 <script>
-// Haptic feedback on button press
+// Haptic feedback on any interactive element
 document.addEventListener("click",function(e){
-  var t=e.target.closest(".btn-haptic,.tool-card,.tool-btn,.tab-btn,.action-btn");
-  if(t&&navigator.vibrate){navigator.vibrate(10)}
+  if(navigator.vibrate)navigator.vibrate(8);
 });
-// Skeleton loader for Sorsa score
-function showSkeleton(){var el=document.getElementById("score-display");if(el){el.innerHTML="<div class="skeleton skeleton-circle" style="margin:20px auto"></div><div class="skeleton" style="width:60%;margin:10px auto"></div><div class="skeleton" style="width:40%;margin:10px auto"></div>"}}
 </script>
 </body>
 </html>
