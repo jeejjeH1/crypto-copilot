@@ -118,13 +118,6 @@ textarea.in{min-height:90px;resize:none}
 .cnb{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 .cnb:disabled{opacity:.25}
 .cnc{font-size:11px;color:var(--text2)}
-/* Skeleton Loading */
-.sk{position:relative;overflow:hidden;background:var(--surface2);border-radius:12px}
-.sk::after{content:"";position:absolute;top:0;right:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(124,58,237,.1),transparent);animation:shimmer 1.2s infinite}
-@keyframes shimmer{0%{transform:translateX(0)}100%{transform:translateX(300%)}}
-.sk-ring{width:110px;height:110px;border-radius:50%;margin:0 auto 12px}
-.sk-line{height:14px;margin:8px auto}
-.sk-line.s1{width:60%}.sk-line.s2{width:40%}.sk-line.s3{width:70%}
 </style>
 </head>
 <body>
@@ -166,7 +159,7 @@ textarea.in{min-height:90px;resize:none}
       <input class="in" type="text" id="sorsaInput" placeholder="@username" dir="ltr">
       <button class="in-btn" onclick="checkSorsa()"><svg class="ic ic-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> Search</button>
     </div>
-    <div id="sorsaLd"><div class="sk sk-ring"></div><div class="sk sk-line s1"></div><div class="sk sk-line s2"></div></div>
+    <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
     <div class="sorsa-box" id="sorsaBox" style="display:none">
       <div class="sorsa-ring" id="sorsaRing"><div class="sorsa-num" id="sorsaNum">0</div></div>
       <div class="sorsa-tier" id="sorsaTier"></div>
@@ -329,12 +322,6 @@ function navR(d){rI=Math.max(0,Math.min(rC.length-1,rI+d));showR()}
 async function doTr(){const t=document.getElementById('trIn').value.trim();if(!t)return toast('Paste text');if(!rk())return;showLd('trLd');document.getElementById('trRs').classList.remove('on');const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:'Translate the following text into Persian. Only the translation, nothing else.',user:t})});hideLd('trLd');if(d.text){document.getElementById('trTxt').innerText=d.text;document.getElementById('trRs').classList.add('on')}}
 async function genProj(){const p=document.getElementById('projIn').value.trim();if(!p)return toast('Enter project name');if(!rk())return;showLd('projLd');document.getElementById('projRs').classList.remove('on');const d=await api('/api/ai',{method:'POST',body:JSON.stringify({apiKey:gk(),system:`Write a crypto twitter post about ${p}.\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet`,user:''})});hideLd('projLd');if(d.text){document.getElementById('projTxt').innerText=d.text;document.getElementById('projRs').classList.add('on')}}
 async function fetchP(){const t=document.getElementById('prIn').value.trim();if(!t)return toast('Enter coin name');showLd('prLd');document.getElementById('prRs').innerHTML='';const d=await api('/api/prices?text='+encodeURIComponent(t));hideLd('prLd');const c=document.getElementById('prRs');if(!d.coins?.length){c.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px">Not found</div>';return}c.innerHTML=d.coins.map(coin=>{const up=coin.change>=0;const pr=coin.usd>=1?'$'+coin.usd.toLocaleString('en',{maximumFractionDigits:2}):coin.usd>=0.01?'$'+coin.usd.toFixed(4):'$'+coin.usd.toFixed(6);return `<div class="cp ${up?'up':'down'}"><span class="nm">${coin.name}</span> ${pr} ${up?'+':''}${coin.change.toFixed(1)}%</div>`}).join('')}
-</script>
-<script>
-// Haptic feedback on any interactive element
-document.addEventListener("click",function(e){
-  if(navigator.vibrate)navigator.vibrate(8);
-});
 </script>
 </body>
 </html>
