@@ -71,7 +71,7 @@ textarea.in{min-height:90px;resize:none}
 .sorsa-ring{width:140px;height:140px;border-radius:50%;margin:0 auto 14px;position:relative;background:conic-gradient(var(--accent) 0deg,rgba(124,58,237,.06) 0deg);display:flex;align-items:center;justify-content:center;transition:background .5s}
 .sorsa-ring::before{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--surface);z-index:2}
 .sorsa-ring::after{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--accent),transparent 60%);opacity:.3;filter:blur(12px)}
-.sorsa-num{position:relative;z-index:1;font-size:38px;font-weight:900;color:var(--accent);line-height:1}
+.sorsa-num{font-size:38px;font-weight:900;color:var(--accent);line-height:1;margin-top:8px}
 .sorsa-tier{position:relative;z-index:1;display:inline-block;margin-top:4px;padding:3px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .t1{background:rgba(220,38,38,.1);color:var(--red)}.t2{background:rgba(217,119,6,.1);color:var(--yellow)}.t3{background:rgba(217,119,6,.12);color:var(--yellow)}.t4{background:rgba(5,150,105,.1);color:var(--green)}.t5{background:rgba(124,58,237,.1);color:var(--accent)}
 .sorsa-user{font-size:13px;color:var(--text2);margin-bottom:12px}.sorsa-user b{color:var(--text);font-weight:600}
@@ -161,7 +161,7 @@ textarea.in{min-height:90px;resize:none}
     </div>
     <div class="ld" id="sorsaLd"><div class="sp"></div><div class="ld-t">Fetching score...</div></div>
     <div class="sorsa-box" id="sorsaBox" style="display:none">
-      <div class="sorsa-ring" id="sorsaRing"><img id="sorsaAvatar" src="" style="position:absolute;width:128px;height:128px;border-radius:50%;object-fit:cover;z-index:3;display:none"><div class="sorsa-num" id="sorsaNum">0</div></div>
+      <div style="text-align:center"><div class="sorsa-ring" id="sorsaRing"><img id="sorsaAvatar" src="" style="position:absolute;width:128px;height:128px;border-radius:50%;object-fit:cover;z-index:3;display:none"></div><div class="sorsa-num" id="sorsaNum">0</div></div>
       <div class="sorsa-tier" id="sorsaTier"></div>
       <div class="sorsa-user"><b id="sorsaUser"></b> on X</div>
       <div class="sorsa-grid">
