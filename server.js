@@ -78,6 +78,106 @@ app.post('/api/ai', async (req, res) => {
   }
 });
 
+// ── Scrape & Analyze ──
+app.post('/api/scrape', async (req, res) => {
+  const { url, apiKey } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL required' });
+  if (!apiKey) return res.status(400).json({ error: 'API key required' });
+  try {
+    const r = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+    });
+    const html = await r.text();
+    // Strip tags to get plain text, first 5000 chars
+    const plainText = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000);
+
+    const aiR = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://x.com',
+        'X-Title': 'Crypto Copilot Mini'
+      },
+      body: JSON.stringify({
+        model: 'openrouter/auto',
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at analyzing websites and crypto/web3 projects. Extract and summarize key information from the provided text.'
+          },
+          {
+            role: 'user',
+            content: `Analyze the following website content and extract key information about the project. Return a JSON object with: name, description, tags (array of relevant topics), and summary. Here's the content:\n\n${plainText}`
+          }
+        ]
+      })
+    });
+    const data = await aiR.json();
+    if (data.error) return res.status(400).json({ error: data.error?.message || JSON.stringify(data.error) });
+    const text = data?.choices?.[0]?.message?.content?.trim() || '';
+    // Try to parse JSON from the response
+    let parsed = null;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+    } catch(e) {}
+    res.json({ text, projectInfo: parsed });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Generate Topics ──
+app.post('/api/topics', async (req, res) => {
+  const { projectInfo, apiKey, count = 25 } = req.body;
+  if (!projectInfo) return res.status(400).json({ error: 'Project info required' });
+  if (!apiKey) return res.status(400).json({ error: 'API key required' });
+  try {
+    const aiR = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://x.com',
+        'X-Title': 'Crypto Copilot Mini'
+      },
+      body: JSON.stringify({
+        model: 'openrouter/auto',
+        temperature: 0.9,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a crypto content strategist. Generate exactly ${count} diverse, engaging content topics based on the project info provided. Each topic should have 3 content ideas. Topics should cover different angles: education, news analysis, technical deep-dives, community engagement, comparisons, tutorials, opinion pieces, etc.`
+          },
+          {
+            role: 'user',
+            content: `Project info: ${typeof projectInfo === 'string' ? projectInfo : JSON.stringify(projectInfo)}\n\nGenerate exactly ${count} topics. Return ONLY a JSON array with this structure: [{topic: "topic name", ideas: [{title: "idea title", angle: "content angle"}]}]\n\nEach topic must have exactly 3 ideas. No markdown, no explanation, just the JSON array.`
+          }
+        ]
+      })
+    });
+    const data = await aiR.json();
+    if (data.error) return res.status(400).json({ error: data.error?.message || JSON.stringify(data.error) });
+    const text = data?.choices?.[0]?.message?.content?.trim() || '';
+    // Parse the JSON array from the response
+    let topics = null;
+    try {
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) topics = JSON.parse(jsonMatch[0]);
+    } catch(e) {}
+    res.json({ topics, raw: text });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── CoinGecko prices ──
 const TOP_COINS = {
   btc:'bitcoin',bitcoin:'bitcoin',eth:'ethereum',ethereum:'ethereum',ether:'ethereum',
