@@ -568,7 +568,7 @@ async function prSelectIdea(topicIdx, ideaIdx) {
       body: JSON.stringify({
         apiKey: gk(),
         system: 'You are a crypto Twitter post writer. Write viral, insightful crypto CT posts.',
-        user: 'Write a crypto Twitter post based on this topic and idea.\n\nTopic: ' + (topic.title || '') + '\nIdea: ' + idea + '\nProject context: ' + prScrapedContent.substring(0, 3000) + '\n\nRules:\n- 1 to 3 punchy sentences\n- CT insider voice, real alpha vibes\n- Max 2 emojis, no hashtags\n- Output ONLY the tweet' + extraStyle
+        user: (getCustomTweet() ? getCustomTweet() + '\\n\\nTopic: ' + (topic.title || '') + '\\nIdea: ' + idea + '\\nProject context: ' + prScrapedContent.substring(0, 3000) : 'Write a crypto Twitter post based on this topic and idea.\\n\\nTopic: ' + (topic.title || '') + '\\nIdea: ' + idea + '\\nProject context: ' + prScrapedContent.substring(0, 3000) + '\\n\\nRules:\\n- 1 to 3 punchy sentences\\n- CT insider voice, real alpha vibes\\n- Max 2 emojis, no hashtags\\n- Output ONLY the tweet') + extraStyle
       })
     });
     var tweetText = tweetResp.text || '';
