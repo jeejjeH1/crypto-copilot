@@ -240,6 +240,123 @@ app.get('/api/prices', async (req, res) => {
 
 app.post('/api/verify', (req, res) => { res.json({ ok: true }); });
 
+// ── Gas Fee (Etherscan) ──
+app.get('/api/gas', async (req, res) => {
+  try {
+    const r = await fetch('https://api.etherscan.io/api?module=gastracker&action=gasoracle');
+    const d = await r.json();
+    if (d.status !== '1' || !d.result) return res.json({ error: 'Failed to fetch gas data' });
+    res.json({
+      safe: d.result.SafeGasPrice,
+      propose: d.result.ProposeGasPrice,
+      fast: d.result.FastGasPrice,
+      baseFee: d.result.suggestBaseFee,
+    });
+  } catch (e) {
+    // Fallback: use Blocknative or another source
+    try {
+      const r2 = await fetch('https://api.blocknative.com/gasprices/blockprices', {
+        headers: { 'Authorization': 'public' }
+      });
+      const d2 = await r2.json();
+      const prices = d2.blockPrices?.[0]?.estimatedPrices;
+      if (prices) {
+        return res.json({
+          safe: prices.find(p => p.confidence === 70)?.price || '?',
+          propose: prices.find(p => p.confidence === 90)?.price || '?',
+          fast: prices.find(p => p.confidence === 99)?.price || '?',
+          baseFee: d2.blockPrices[0]?.baseFeePerGas || '?',
+        });
+      }
+    } catch(e2) {}
+    res.json({ error: 'Gas API unavailable' });
+  }
+});
+
+// ── DeFi Llama TVL ──
+app.get('/api/defillama', async (req, res) => {
+  try {
+    const [tvlR, protocolsR, stablecoinsR] = await Promise.all([
+      fetch('https://api.llama.fi/v2/historicalChainTvl'),
+      fetch('https://api.llama.fi/protocols'),
+      fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true'),
+    ]);
+    const tvlData = await tvlR.json();
+    const protocols = await protocolsR.json();
+    const stablecoins = await stablecoinsR.json();
+
+    // Top 10 protocols by TVL
+    const topProtocols = protocols
+      .sort((a, b) => (b.tvl || 0) - (a.tvl || 0))
+      .slice(0, 10)
+      .map(p => ({
+        name: p.name,
+        category: p.category,
+        tvl: p.tvl,
+        chain: p.chains?.[0] || 'Multi-chain',
+        change_1d: p.change_1d,
+        change_7d: p.change_7d,
+      }));
+
+    // Total TVL
+    const totalTvl = tvlData.length ? tvlData[tvlData.length - 1].tvl : 0;
+    const prevDay = tvlData.length > 1 ? tvlData[tvlData.length - 2].tvl : totalTvl;
+    const tvlChange = prevDay ? ((totalTvl - prevDay) / prevDay * 100).toFixed(2) : 0;
+
+    // Stablecoin data
+    const totalStable = stablecoins.peggedAssets?.reduce((s, c) => s + (c.circulating?.peggedUSD || 0), 0) || 0;
+
+    res.json({
+      totalTvl,
+      tvlChange,
+      topProtocols,
+      totalStablecoins: totalStable,
+    });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+// ── CoinGecko Market Data ──
+app.get('/api/market', async (req, res) => {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=1h%2C24h%2C7d');
+    const data = await r.json();
+    res.json({ coins: data });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+// ── TTS (OpenAI compatible) ──
+app.post('/api/tts', async (req, res) => {
+  const { text, apiKey } = req.body;
+  if (!text) return res.status(400).json({ error: 'Text required' });
+  if (!apiKey) return res.status(400).json({ error: 'API key required' });
+  try {
+    const r = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        input: text.substring(0, 4096),
+        voice: 'alloy',
+      }),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      return res.status(400).json({ error: err.error?.message || 'TTS failed' });
+    }
+    res.setHeader('Content-Type', 'audio/mpeg');
+    r.body.pipe(res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
