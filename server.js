@@ -351,7 +351,7 @@ app.post('/api/tts', async (req, res) => {
       return res.status(400).json({ error: err.error?.message || 'TTS failed' });
     }
     res.setHeader('Content-Type', 'audio/mpeg');
-    r.body.pipe(res);
+    const buf = Buffer.from(await r.arrayBuffer()); res.send(buf);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -369,9 +369,10 @@ app.post('/api/tts-edge', async (req, res) => {
       },
     });
     if (!r.ok) return res.status(400).json({ error: 'TTS failed' });
+    const buf = Buffer.from(await r.arrayBuffer());
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Content-Disposition', 'attachment; filename="speech.mp3"');
-    r.body.pipe(res);
+    res.send(buf);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
