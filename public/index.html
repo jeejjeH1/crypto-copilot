@@ -21,8 +21,8 @@
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:64px;overflow-x:hidden}
 
 /* Crypto floating background */
-.crypto-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
-.crypto-bg span{position:absolute;opacity:.08;animation:floatUp linear infinite;font-size:28px}
+.crypto-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;overflow:hidden}
+.crypto-bg span{position:absolute;opacity:.15;animation:floatUp linear infinite;font-size:28px}
 @keyframes floatUp{0%{transform:translateY(110vh) rotate(0deg)}100%{transform:translateY(-10vh) rotate(360deg)}}
 
 /* SVG icon helper */
