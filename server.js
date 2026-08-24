@@ -10,6 +10,59 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
+// ── User Tracking (JSON file) ──
+const fs = require('fs');
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+function loadUsers() {
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { return {}; }
+}
+function saveUsers(data) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+}
+function trackUser(userId, name, action = 'visit') {
+  const users = loadUsers();
+  const now = new Date();
+  const monthKey = now.toISOString().slice(0, 7);
+  const dayKey = now.toISOString().slice(0, 10);
+  if (!users[userId]) {
+    users[userId] = { name, firstSeen: now.toISOString(), actions: {}, monthly: {}, daily: {} };
+  }
+  users[userId].name = name;
+  users[userId].actions[action] = (users[userId].actions[action] || 0) + 1;
+  if (!users[userId].monthly) users[userId].monthly = {};
+  users[userId].monthly[monthKey] = (users[userId].monthly[monthKey] || 0) + 1;
+  if (!users[userId].daily) users[userId].daily = {};
+  users[userId].daily[dayKey] = (users[userId].daily[dayKey] || 0) + 1;
+  users[userId].lastSeen = now.toISOString();
+  saveUsers(users);
+  return users[userId];
+}
+function getStats() {
+  const users = loadUsers();
+  const now = new Date();
+  const monthKey = now.toISOString().slice(0, 7);
+  const dayKey = now.toISOString().slice(0, 10);
+  const totalUsers = Object.keys(users).length;
+  const monthlyActive = Object.values(users).filter(u => u.monthly && u.monthly[monthKey]).length;
+  const dailyActive = Object.values(users).filter(u => u.daily && u.daily[dayKey]).length;
+  const todayActions = Object.values(users).reduce((s, u) => s + (u.daily?.[dayKey] || 0), 0);
+  // Top users this month
+  const topUsers = Object.entries(users)
+    .map(([id, u]) => ({ id, name: u.name, count: u.monthly?.[monthKey] || 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  return { totalUsers, monthlyActive, dailyActive, todayActions, topUsers, monthKey };
+}
+
+// ── Track every API call ──
+app.use((req, res, next) => {
+  if (req.body?.userId) {
+    trackUser(req.body.userId, req.body.userName || 'User', req.path.replace('/api/', ''));
+  }
+  next();
+});
+
 // ── Sorsa Score Scraper ──
 app.get('/api/sorsa', async (req, res) => {
   const username = (req.query.username || '').trim().replace('@','');
@@ -377,6 +430,65 @@ app.post('/api/tts-edge', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ── Stats API ──
+app.get('/api/stats', (req, res) => {
+  const stats = getStats();
+  res.json(stats);
+});
+
+// ── Telegram Bot Webhook ──
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+if (BOT_TOKEN) {
+  app.post('/api/webhook', async (req, res) => {
+    const msg = req.body.message;
+    if (!msg) return res.json({ ok: true });
+    const chatId = msg.chat.id;
+    const text = msg.text || '';
+    const userId = msg.from?.id;
+    const userName = msg.from?.first_name || 'User';
+    
+    // Track user
+    if (userId) trackUser(String(userId), userName, 'bot_' + (text.split(' ')[0] || 'message'));
+    
+    const sendMsg = async (reply) => {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: reply, parse_mode: 'HTML' }),
+      });
+    };
+    
+    if (text === '/start') {
+      await sendMsg(`👋 Welcome to Crypto Copilot!\n\nI help you create crypto tweets & replies.\n\nCommands:\n/stats - Bot statistics\n/leaderboard - Top users\n/help - Help`);
+    } else if (text === '/stats') {
+      const s = getStats();
+      let reply = `📊 <b>Bot Statistics</b>\n\n`;
+      reply += `👥 Total Users: <b>${s.totalUsers}</b>\n`;
+      reply += `📅 Monthly Active: <b>${s.monthlyActive}</b>\n`;
+      reply += `📆 Daily Active: <b>${s.dailyActive}</b>\n`;
+      reply += `⚡ Today Actions: <b>${s.todayActions}</b>\n`;
+      reply += `📅 Month: ${s.monthKey}`;
+      await sendMsg(reply);
+    } else if (text === '/leaderboard') {
+      const s = getStats();
+      let reply = `🏆 <b>Top Users - ${s.monthKey}</b>\n\n`;
+      if (s.topUsers.length === 0) {
+        reply += 'No data yet.';
+      } else {
+        const medals = ['🥇', '🥈', '🥉'];
+        s.topUsers.forEach((u, i) => {
+          reply += `${medals[i] || (i+1+'.')} ${u.name} — ${u.count} actions\n`;
+        });
+      }
+      await sendMsg(reply);
+    } else if (text === '/help') {
+      await sendMsg(`🤖 <b>Crypto Copilot Bot</b>\n\nUse the Mini App for:\n• Reply to tweets\n• Translate\n• Create tweets\n• Project research\n• Gas fees\n• Market data\n• DeFi TVL\n• Voice TTS\n\nCommands:\n/stats - Statistics\n/leaderboard - Top users`);
+    }
+    
+    res.json({ ok: true });
+  });
+}
 
 app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
